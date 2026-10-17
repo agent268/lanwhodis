@@ -9,6 +9,8 @@ QtObject {
     // "dark" | "light" | "deck"   (bound to backend.theme from Main.qml)
     property string mode: "dark"
     property real zoom: 1.0
+    // true when the OS asks for reduced motion (bound to backend.reduceMotion from Main.qml)
+    property bool reduceMotion: false
 
     // ── Scale ─────────────────────────────────────────────────────
     readonly property real unit:       20 * zoom
@@ -44,7 +46,18 @@ QtObject {
     readonly property color success:        _pal.success
     readonly property color warning:        _pal.warning
     readonly property color danger:         _pal.danger
+    // ink for text on a solid accent / danger fill (white fails on the bright dark-theme fills)
+    readonly property color accentInk:       _pal.accentInk
+    readonly property color dangerInk:       _pal.dangerInk
+    // status colours tuned for 12 px chip text on their own 16% tint (>= 4.5:1)
+    readonly property color successText:    _pal.successText
+    readonly property color warningText:    _pal.warningText
+    readonly property color dangerText:     _pal.dangerText
 
+    // animation duration in ms; 0 when the user prefers reduced motion
+    function dur(ms) { return reduceMotion ? 0 : ms }
+    // category label text: the tile colour is fine for icons, but 15 px text needs a per-theme variant (>= 4.5:1)
+    function labelColor(darkHex, lightHex) { return mode === "light" ? lightHex : darkHex }
     // accepts a color or a "#rrggbb" string (the model delivers category colours as strings)
     function alpha(c, a) { var q = Qt.color(c); return Qt.rgba(q.r, q.g, q.b, a) }
 
@@ -78,6 +91,11 @@ QtObject {
         readonly property color success:        "#4cc38a"
         readonly property color warning:        "#e0a84f"
         readonly property color danger:         "#e5534b"
+        readonly property color accentInk:       "#0e141b"
+        readonly property color dangerInk:       "#0e141b"
+        readonly property color successText:    "#4cc38a"
+        readonly property color warningText:    "#e0a84f"
+        readonly property color dangerText:     "#ea756f"
     }
 
     property var _light: QtObject {
@@ -101,6 +119,11 @@ QtObject {
         readonly property color success:        "#2e8f5e"
         readonly property color warning:        "#b87a1c"
         readonly property color danger:         "#c93a33"
+        readonly property color accentInk:       "#ffffff"
+        readonly property color dangerInk:       "#ffffff"
+        readonly property color successText:    "#26754d"
+        readonly property color warningText:    "#8e5e16"
+        readonly property color dangerText:     "#b7352e"
     }
 
     // Steam Deck gaming mode: same navy, orange accent
@@ -125,5 +148,10 @@ QtObject {
         readonly property color success:        "#4cc38a"
         readonly property color warning:        "#e0a84f"
         readonly property color danger:         "#e5534b"
+        readonly property color accentInk:       "#0e141b"
+        readonly property color dangerInk:       "#0e141b"
+        readonly property color successText:    "#4cc38a"
+        readonly property color warningText:    "#e0a84f"
+        readonly property color dangerText:     "#ea756f"
     }
 }

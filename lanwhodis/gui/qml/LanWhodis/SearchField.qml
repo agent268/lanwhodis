@@ -8,6 +8,9 @@ Rectangle {
     property string placeholder: "Search devices"
     signal edited(string text)
 
+    Accessible.role: Accessible.EditableText
+    Accessible.name: field.placeholder
+
     function focusField() { input.forceActiveFocus(); input.selectAll() }
 
     implicitHeight: Theme.unit * 2.1
@@ -16,7 +19,7 @@ Rectangle {
     color: Theme.inputSurface
     border.width: 1
     border.color: input.activeFocus ? Theme.accent : Theme.sectionBorder
-    Behavior on border.color { ColorAnimation { duration: 100 } }
+    Behavior on border.color { ColorAnimation { duration: Theme.dur(100) } }
 
     Icon {
         id: lead

@@ -38,6 +38,11 @@ Popup {
                 required property int index
                 readonly property string label: typeof modelData === "string" ? modelData : modelData.label
                 readonly property string icon: typeof modelData === "string" ? "" : (modelData.icon || "")
+                Accessible.role: Accessible.MenuItem
+                Accessible.name: label
+                Accessible.checkable: true
+                Accessible.checked: menu.currentIndex === index
+                Accessible.onPressAction: { menu.chosen(item.index); menu.close() }
                 implicitWidth: rowItem.implicitWidth + Theme.unit * 1.2
                 width: list.width
                 height: Theme.unit * 1.9

@@ -20,12 +20,27 @@ Rectangle {
     color: active ? Theme.alpha(Theme.accent, 0.22)
          : mouse.pressed ? Theme.alpha(Theme.text, 0.16)
          : mouse.containsMouse ? Theme.alpha(Theme.text, 0.10) : "transparent"
-    border.width: activeFocus ? 1 : 0
-    border.color: Theme.text
-    Behavior on color { ColorAnimation { duration: 90 } }
+    Behavior on color { ColorAnimation { duration: Theme.dur(90) } }
 
+    Accessible.role: Accessible.Button
+    Accessible.name: btn.tooltip
+    Accessible.checkable: true
+    Accessible.checked: btn.active
+    Accessible.onPressAction: btn.clicked()
     Keys.onReturnPressed: btn.clicked()
     Keys.onSpacePressed: btn.clicked()
+
+
+    // keyboard focus: a clear 2 px ring just outside the control (only Tab can focus these, so no ring after a click)
+    Rectangle {
+        visible: parent.activeFocus
+        anchors.fill: parent
+        anchors.margins: -3
+        radius: parent.radius + 3
+        color: "transparent"
+        border.width: 2
+        border.color: Theme.accent
+    }
 
     Icon {
         anchors.centerIn: parent

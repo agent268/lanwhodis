@@ -17,8 +17,14 @@ Item {
     required property bool edited
     required property bool offline
     required property string subtitle
+    required property string labelDark
+    required property string labelLight
 
     property bool selected: false
+    Accessible.role: Accessible.ListItem
+    Accessible.name: cell.name + ", " + cell.typeLabel + ", " + cell.ip + (cell.status !== "" ? ", " + cell.status : "")
+    Accessible.selected: cell.selected
+    Accessible.onPressAction: cell.activated()
     signal activated()
     signal opened()
 
@@ -33,7 +39,7 @@ Item {
              : mouse.containsMouse ? Theme.surfaceAlt : (cell.index % 2 === 0 ? "transparent" : Theme.alpha(Theme.surface, 0.5))
         border.width: cell.selected ? 1 : 0
         border.color: Theme.accent
-        Behavior on color { ColorAnimation { duration: 90 } }
+        Behavior on color { ColorAnimation { duration: Theme.dur(90) } }
 
         Tile {
             id: tile
@@ -42,6 +48,7 @@ Item {
             size: Theme.unit * 2.1
             iconName: cell.iconName
             tileColor: cell.color
+            glyphColor: Theme.labelColor(cell.labelDark, cell.labelLight)
             dim: cell.offline
         }
 
@@ -67,7 +74,7 @@ Item {
                 width: parent.w * 0.16
                 text: cell.typeLabel + (cell.edited ? " ✎" : "")
                 elide: Text.ElideRight
-                color: Theme.alpha(cell.color, cell.offline ? 0.55 : 1.0)
+                color: Theme.alpha(Theme.labelColor(cell.labelDark, cell.labelLight), cell.offline ? 0.7 : 1.0)
                 font.pixelSize: Theme.fontSize
                 anchors.verticalCenter: parent.verticalCenter
             }

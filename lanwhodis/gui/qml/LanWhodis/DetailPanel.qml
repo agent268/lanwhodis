@@ -65,6 +65,7 @@ Rectangle {
                     size: Theme.unit * 4.4
                     iconName: panel.cur.iconName || ""
                     tileColor: panel.cur.color || Theme.accent
+                    glyphColor: Theme.labelColor(panel.cur.labelDark || panel.cur.color || Theme.accent, panel.cur.labelLight || panel.cur.color || Theme.accent)
                     dim: !!panel.cur.offline
                 }
                 Column {
@@ -84,7 +85,7 @@ Rectangle {
                     Flow {
                         width: parent.width
                         spacing: Theme.unit * 0.35
-                        Chip { text: panel.cur.typeLabel || ""; tone: "custom"; customColor: panel.cur.color || Theme.accent }
+                        Chip { text: panel.cur.typeLabel || ""; tone: "custom"; customColor: Theme.labelColor(panel.cur.labelDark || panel.cur.color || Theme.accent, panel.cur.labelLight || panel.cur.color || Theme.accent) }
                         Chip {
                             visible: !panel.cur.offline
                             text: Math.round((panel.cur.confidence || 0) * 100) + "% sure"

@@ -31,10 +31,10 @@ Item {
                 radius: width / 2
                 color: Theme.alpha(root.tint, 0.10)
                 SequentialAnimation on scale {
-                    running: root.busy
+                    running: root.busy && !Theme.reduceMotion
                     loops: Animation.Infinite
-                    NumberAnimation { from: 1.0; to: 1.22; duration: 900; easing.type: Easing.InOutSine }
-                    NumberAnimation { from: 1.22; to: 1.0; duration: 900; easing.type: Easing.InOutSine }
+                    NumberAnimation { from: 1.0; to: 1.22; duration: Theme.dur(900); easing.type: Easing.InOutSine }
+                    NumberAnimation { from: 1.22; to: 1.0; duration: Theme.dur(900); easing.type: Easing.InOutSine }
                 }
             }
             Tile {

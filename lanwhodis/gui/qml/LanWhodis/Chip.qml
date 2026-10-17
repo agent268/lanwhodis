@@ -15,6 +15,15 @@ Rectangle {
                                  : tone === "danger" ? Theme.danger
                                  : tone === "custom" ? customColor : Theme.textDim
 
+    // 12 px text on its own 16% tint needs a tuned colour; the custom tone is supplied by the caller
+    readonly property color _text: tone === "success" ? Theme.successText
+                                 : tone === "warning" ? Theme.warningText
+                                 : tone === "danger" ? Theme.dangerText
+                                 : tone === "neutral" ? Theme.textDim : _tone
+
+    Accessible.role: Accessible.StaticText
+    Accessible.name: chip.text
+
     implicitHeight: Theme.unit * 1.3
     implicitWidth: content.implicitWidth + Theme.unit * 0.9
     radius: height / 2
@@ -30,13 +39,13 @@ Rectangle {
             visible: chip.iconName !== ""
             anchors.verticalCenter: parent.verticalCenter
             name: chip.iconName
-            tint: chip._tone
+            tint: chip._text
             size: Theme.fontSizeSm * 1.2
         }
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: chip.text
-            color: chip._tone
+            color: chip._text
             font.pixelSize: Theme.fontSizeSm
             font.bold: true
         }

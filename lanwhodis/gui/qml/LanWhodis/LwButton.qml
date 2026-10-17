@@ -19,7 +19,7 @@ Rectangle {
     readonly property color _base: danger ? Theme.danger
                                  : primary ? Theme.accent
                                  : ghost ? "transparent" : Theme.buttonSurface
-    readonly property color _fg: (primary || danger) ? "#ffffff" : Theme.text
+    readonly property color _fg: danger ? Theme.dangerInk : primary ? Theme.accentInk : Theme.text
 
     implicitHeight: Theme.unit * (compact ? 1.7 : 2.1)
     implicitWidth: row.implicitWidth + Theme.unit * (compact ? 1.0 : 1.5)
@@ -31,13 +31,27 @@ Rectangle {
          : mouse.containsMouse ? (ghost ? Theme.alpha(Theme.text, 0.10) : Qt.lighter(_base, 1.14))
          : _base
     border.width: ghost ? 0 : 1
-    border.color: activeFocus ? Theme.text
-                 : (primary || danger) ? Qt.darker(_base, 1.15) : Theme.buttonBorder
-    Behavior on color { ColorAnimation { duration: 90 } }
+    border.color: (primary || danger) ? Qt.darker(_base, 1.15) : Theme.buttonBorder
+    Behavior on color { ColorAnimation { duration: Theme.dur(90) } }
 
+    Accessible.role: Accessible.Button
+    Accessible.name: btn.text !== "" ? btn.text : btn.tooltip
+    Accessible.onPressAction: btn.clicked()
     Keys.onReturnPressed: btn.clicked()
     Keys.onEnterPressed: btn.clicked()
     Keys.onSpacePressed: btn.clicked()
+
+
+    // keyboard focus: a clear 2 px ring just outside the control (only Tab can focus these, so no ring after a click)
+    Rectangle {
+        visible: parent.activeFocus
+        anchors.fill: parent
+        anchors.margins: -3
+        radius: parent.radius + 3
+        color: "transparent"
+        border.width: 2
+        border.color: Theme.accent
+    }
 
     Row {
         id: row
