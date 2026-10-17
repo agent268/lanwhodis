@@ -101,3 +101,18 @@ Corrections live in `labels.json` in the data dir, keyed by MAC (phones with ran
 network). They override the type/name with 100% confidence, the scanner's own verdict is kept beside them, and each
 correction records what the scanner saw - so a disagreement is also a bug report you can act on (`--suggest-rules`
 or a custom rule). `--no-labels` ignores them for one scan.
+
+## History (presence and change tracking)
+
+Every completed scan is recorded in a local SQLite file (`history.db` in the data dir; `--no-history` skips it,
+`--forget-history` deletes it). The first scan of a network is a silent baseline; after that you get **new**,
+**returned**, **moved** (same MAC, new IP) and **left** events. WiFi gear naps, so a device only counts as *left* after
+missing two consecutive scans. Networks are tracked independently, and a stopped (partial) scan is never recorded.
+
+    netscout                      # prints "history: NEW 192.168.1.51 ..." lines after the table (stderr)
+    netscout --watch 10           # rescan every 10 minutes, print only what changed
+    netscout --known              # every device ever seen: first/last seen, online/offline
+    netscout --events 50          # recent change events
+
+GUI: a Status column (New / Returned / Offline), remembered-but-silent devices shown dimmed ("Show offline"), and
+a summary in the status bar. Exports gain a "First seen" column; JSON has a `history` object per device.

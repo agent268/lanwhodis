@@ -2,46 +2,83 @@
 from __future__ import annotations
 
 import html
+import sqlite3
 import sys
 import threading
+import time
 
 from PySide6.QtCore import QObject, QSize, QSortFilterProxyModel, Qt, QThread, QUrl, Signal
 from PySide6.QtGui import (QColor, QDesktopServices, QIcon, QPainter, QPixmap, QStandardItem,
                            QStandardItemModel)
 from PySide6.QtSvg import QSvgRenderer
-from PySide6.QtWidgets import (QApplication, QComboBox, QDialog, QDialogButtonBox, QFileDialog, QFormLayout,
+from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFileDialog, QFormLayout,
                                QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMenu, QMessageBox,
                                QPlainTextEdit, QProgressBar, QPushButton, QSplitter, QTableView,
                                QTextBrowser, QVBoxLayout, QWidget, QHeaderView)
 
-from .. import classify, devtypes, export, icons, scanner
+from .. import classify, devtypes, export, history, icons, scanner
 from ..discovery import net
 from ..labels import LabelStore, key_for
 from ..model import Device
 
-COLS = ["Device", "IP", "Type", "OS", "Vendor", "MAC", "Confidence"]
+COLS = ["Device", "IP", "Type", "Status", "OS", "Vendor", "MAC", "Confidence"]
+SID_ROLE = Qt.ItemDataRole.UserRole + 1        # which snapshot a row shows (online: IP, offline: "offline:<key>")
+OFFLINE_ROLE = Qt.ItemDataRole.UserRole + 2
 FILTERS = {
     "json": "JSON (*.json)", "html": "HTML (*.html)", "md": "Markdown (*.md)", "csv": "CSV (*.csv)",
     "xlsx": "Excel (*.xlsx)", "pdf": "PDF (*.pdf)", "txt": "Plain text (*.txt)",
 }
 
-_icon_cache: dict[str, QIcon] = {}
+_icon_cache: dict[tuple[str, bool], QIcon] = {}
 
 
-def type_icon(device_type: str) -> QIcon:
-    """Rasterise the SVG pictogram at several sizes so it stays crisp on HiDPI screens."""
-    if device_type not in _icon_cache:
+def type_icon(device_type: str, dim: bool = False) -> QIcon:
+    """Rasterise the SVG pictogram at several sizes so it stays crisp on HiDPI screens.
+    dim=True is the faded variant used for devices that are currently offline."""
+    if (device_type, dim) not in _icon_cache:
         icon = QIcon()
         renderer = QSvgRenderer(icons.svg(device_type, 24).encode())
         for px in (24, 32, 48, 64, 96):
             pm = QPixmap(px, px)
             pm.fill(Qt.GlobalColor.transparent)
             p = QPainter(pm)
+            p.setOpacity(0.35 if dim else 1.0)
             renderer.render(p)
             p.end()
             icon.addPixmap(pm)
-        _icon_cache[device_type] = icon
-    return _icon_cache[device_type]
+        _icon_cache[(device_type, dim)] = icon
+    return _icon_cache[(device_type, dim)]
+
+
+class RowFilter(QSortFilterProxyModel):
+    """Text filter plus the 'show offline devices' switch."""
+    show_offline = True
+
+    def filterAcceptsRow(self, row, parent) -> bool:
+        if not self.show_offline and self.sourceModel().item(row, 0).data(OFFLINE_ROLE):
+            return False
+        return super().filterAcceptsRow(row, parent)
+
+
+def _ago(ts: float) -> str:
+    secs = max(0, int(time.time() - ts))
+    for unit, size in (("day", 86400), ("hour", 3600), ("minute", 60)):
+        if secs >= size:
+            n = secs // size
+            return f"{n} {unit}{'s' if n != 1 else ''} ago"
+    return "just now"
+
+
+def offline_snapshot(k: history.KnownDevice) -> dict:
+    """A snapshot (same shape as Device.to_dict) for a remembered device that didn't answer this scan."""
+    return {"sid": f"offline:{k.key}", "offline": True, "ip": k.last_ip, "mac": k.mac, "name": k.name,
+            "hostname": None, "vendor": k.vendor, "model": None, "type": k.type,
+            "type_label": devtypes.label(k.type), "category": devtypes.category(k.type), "confidence": 0.0,
+            "os": k.os or "", "os_family": None, "os_detail": None, "os_confidence": 0.0, "os_evidence": [],
+            "web_url": None, "web_urls": [], "advertised": [], "recog": [], "user": None, "open_ports": [],
+            "services": [], "names": {}, "facts": {}, "evidence": [],
+            "history": {"status": "offline", "first_seen": k.first_seen, "last_seen": k.last_seen,
+                        "seen_count": k.seen_count, "missed": k.missed}}
 
 
 class ScanWorker(QObject):
@@ -129,6 +166,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("netscout")
         self.resize(1180, 720)
         self.labels = LabelStore()
+        self.scanned: list = []         # interfaces of the scan in progress / last completed
         self.devices: list[Device] = []
         self.rows: dict[str, int] = {}
         self.snapshots: dict[str, dict] = {}
@@ -144,14 +182,18 @@ class MainWindow(QMainWindow):
         self.filter = QLineEdit(placeholderText="Filter devices…", clearButtonEnabled=True)
 
         top = QHBoxLayout()
-        for w in (QLabel("Network:"), self.iface_combo, self.scan_btn, self.export_btn):
+        self.offline_box = QCheckBox("Show offline")
+        self.offline_box.setChecked(True)
+        self.offline_box.setToolTip("Devices seen in earlier scans that didn't answer this time")
+        self.offline_box.toggled.connect(self._toggle_offline)
+        for w in (QLabel("Network:"), self.iface_combo, self.scan_btn, self.export_btn, self.offline_box):
             top.addWidget(w)
         top.addStretch(1)
         top.addWidget(self.filter, 1)
 
         self.model = QStandardItemModel(0, len(COLS))
         self.model.setHorizontalHeaderLabels(COLS)
-        self.proxy = QSortFilterProxyModel()
+        self.proxy = RowFilter()
         self.proxy.setSourceModel(self.model)
         self.proxy.setSortRole(Qt.ItemDataRole.UserRole)
         self.proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
@@ -171,10 +213,10 @@ class MainWindow(QMainWindow):
         hh = self.table.horizontalHeader()
         hh.setStretchLastSection(False)
         hh.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
-        for i, w in enumerate((220, 110, 130, 150, 0, 130, 80)):
+        for i, w in enumerate((210, 110, 130, 80, 150, 0, 125, 80)):
             if w:
                 self.table.setColumnWidth(i, w)
-        hh.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+        hh.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
         self.table.sortByColumn(1, Qt.SortOrder.AscendingOrder)
         self.table.selectionModel().selectionChanged.connect(self.show_selected)
         self.table.doubleClicked.connect(lambda *_: self.open_web_ui())
@@ -254,6 +296,7 @@ class MainWindow(QMainWindow):
         self.bar.setVisible(True)
         self.statusBar().showMessage("Scanning…")
 
+        self.scanned = ifaces
         self.thread = QThread()
         self.worker = ScanWorker(ifaces, self.labels)
         self.worker.moveToThread(self.thread)
@@ -270,30 +313,66 @@ class MainWindow(QMainWindow):
         self.bar.setValue(int((base + span * frac) * 1000))
 
     def on_device(self, snap: dict) -> None:
-        ip = snap["ip"]
-        self.snapshots[ip] = snap
-        row = self.rows.get(ip)
+        sid = snap.setdefault("sid", snap["ip"])
+        offline = bool(snap.get("offline"))
+        self.snapshots[sid] = snap
+        row = self.rows.get(sid)
         if row is None:
-            row = self.rows[ip] = self.model.rowCount()
+            row = self.rows[sid] = self.model.rowCount()
             self.model.appendRow([QStandardItem() for _ in COLS])
+        ip = snap["ip"]
         ip_key = tuple(int(p) for p in ip.split("."))
         user = snap.get("user")
         edited = bool(user and user["type"])
-        values = [snap["name"], ip, snap["type_label"] + (" ✎" if edited else ""), snap["os"],
-                  snap["vendor"] or "", snap["mac"] or "", f"{int(snap['confidence'] * 100)}%"]
+        hist = snap.get("history") or {}
+        status = "Offline" if offline else {"new": "New", "returned": "Returned"}.get(hist.get("status"), "")
+        values = [snap["name"], ip, snap["type_label"] + (" ✎" if edited else ""), status, snap["os"],
+                  snap["vendor"] or "", snap["mac"] or "",
+                  "" if offline else f"{int(snap['confidence'] * 100)}%"]
         keys = [snap["name"].lower(), ip_key[0] << 24 | ip_key[1] << 16 | ip_key[2] << 8 | ip_key[3],
-                snap["type_label"], snap["os"].lower(), (snap["vendor"] or "").lower(), snap["mac"] or "",
-                snap["confidence"]]
+                snap["type_label"], status, snap["os"].lower(), (snap["vendor"] or "").lower(),
+                snap["mac"] or "", snap["confidence"]]
         for c, (v, k) in enumerate(zip(values, keys)):
             it = self.model.item(row, c)
             it.setText(v)
             it.setData(k, Qt.ItemDataRole.UserRole)
-        self.model.item(row, 0).setIcon(type_icon(snap["type"]))
+            it.setForeground(QColor("#8a94a3") if offline else QColor("#4cc38a") if (c == 3 and status) else QColor())
+        first = self.model.item(row, 0)
+        first.setData(sid, SID_ROLE)
+        first.setData(offline, OFFLINE_ROLE)
+        first.setIcon(type_icon(snap["type"], dim=offline))
         self.model.item(row, 2).setToolTip(
             f"You set this. Auto-detected: {user['auto_type_label']} ({int(user['auto_confidence'] * 100)}%)"
             if edited else "")
-        n = self.model.rowCount()
-        self.setWindowTitle(f"netscout — {n} devices")
+        self.model.item(row, 3).setToolTip(
+            f"Last seen {_ago(hist['last_seen'])}" if offline and hist.get("last_seen") else "")
+        self.setWindowTitle(f"netscout — {sum(1 for s in self.snapshots.values() if not s.get('offline'))} devices")
+
+    def _toggle_offline(self, on: bool) -> None:
+        self.proxy.show_offline = on
+        self.proxy.invalidateFilter()
+
+    def _record_history(self, devices: list[Device]) -> str:
+        """Store this scan and add remembered-but-silent devices as offline rows. Returns a status suffix."""
+        if self.worker and self.worker.stop.is_set():
+            return " (stopped: not recorded in history)"      # a partial scan would make devices look gone
+        nets = [str(i.network) for i in self.scanned]
+        try:
+            h = history.History()
+            diff = h.record(devices, nets)
+            keys = {key_for(d) for d in devices}
+            offline = h.offline(nets, keys)
+        except (sqlite3.Error, OSError) as e:
+            return f" (history unavailable: {e})"
+        for d in devices:                                     # refresh rows: they now carry history
+            self.on_device(d.to_dict())
+        for k in offline:
+            self.on_device(offline_snapshot(k))
+        bits = [f"{len(diff.new)} new"] * bool(diff.new) + [f"{len(diff.returned)} returned"] * bool(diff.returned) \
+            + [f"{len(diff.moved)} moved"] * bool(diff.moved) + [f"{len(diff.left)} left"] * bool(diff.left)
+        if diff.baseline_networks:
+            bits.append("baseline recorded")
+        return " · " + ", ".join(bits) if bits else ""
 
     def on_finished(self, devices: list, error: str) -> None:
         if self.thread:
@@ -303,17 +382,17 @@ class MainWindow(QMainWindow):
         self.devices = devices
         for d in devices:                       # final, fully-enriched classification
             self.on_device(d.to_dict())
+        suffix = "" if error else self._record_history(devices)
         self.scan_btn.setText("Scan")
         self.scan_btn.setEnabled(True)
         self.bar.setVisible(False)
         self.export_btn.setEnabled(bool(devices))
-        self.statusBar().showMessage(f"Scan failed: {error}" if error else f"Done — {len(devices)} devices")
+        self.statusBar().showMessage(f"Scan failed: {error}" if error else f"Done — {len(devices)} devices{suffix}")
         self.show_selected()
 
     # --- details --------------------------------------------------------------------------
     def show_selected(self, *_) -> None:
-        idx = self.table.selectionModel().selectedRows(1)
-        snap = self.snapshots.get(idx[0].data()) if idx else None
+        snap = self.selected_snap()
         if not snap:
             self.head_icon.clear()
             self.head_name.setText("Select a device")
@@ -325,10 +404,25 @@ class MainWindow(QMainWindow):
         self.open_btn.setToolTip(snap["web_url"] or "No web interface found for this device")
         self.head_icon.setPixmap(type_icon(snap["type"]).pixmap(QSize(56, 56)))
         self.head_name.setText(snap["name"])
-        self.head_sub.setText(f"{snap['type_label']} · {int(snap['confidence'] * 100)}% confidence")
+        self.head_sub.setText(f"{snap['type_label']} · offline" if snap.get("offline")
+                              else f"{snap['type_label']} · {int(snap['confidence'] * 100)}% confidence")
         e = html.escape
         user = snap.get("user") or {}
-        rows = [("Auto-detected", user.get("type") and
+        h = snap.get("history") or {}
+        if snap.get("offline"):
+            hist_text = (f"Offline - last seen {_ago(h['last_seen'])}; missed {h['missed']} scan"
+                         f"{'s' if h['missed'] != 1 else ''}. First seen "
+                         f"{time.strftime('%Y-%m-%d', time.localtime(h['first_seen']))}, seen in {h['seen_count']} scans.")
+        elif h.get("status") == "new":
+            hist_text = "New device: first time it has been seen on this network"
+        elif h.get("first_seen"):
+            hist_text = (("Returned after being away. " if h.get("status") == "returned" else "")
+                         + f"First seen {time.strftime('%Y-%m-%d', time.localtime(h['first_seen']))}, "
+                           f"seen in {h['seen_count']} scans"
+                         + (f"; previously at {h['previous_ip']}" if h.get("previous_ip") else ""))
+        else:
+            hist_text = None
+        rows = [("History", hist_text), ("Auto-detected", user.get("type") and
                  f"{user['auto_type_label']} ({int(user['auto_confidence'] * 100)}%) - you changed this"),
                 ("Your notes", user.get("notes")),
                 ("IP", snap["ip"]), ("OS", snap["os"] and f'{snap["os"]} ({int(snap["os_confidence"] * 100)}%)'), ("MAC", snap["mac"]), ("Vendor", snap["vendor"]), ("Model", snap["model"]),
@@ -361,12 +455,12 @@ class MainWindow(QMainWindow):
             + "</ul>" for label, items in export.grouped_services(snap))
         svc_html = f"<h4>Advertised services ({len(snap['advertised'])})</h4>{svc}" if svc else ""
         self.detail.setHtml(f"<table cellpadding=3>{body}</table>{svc_html}"
-                            f"<h4>Why this type?</h4><ul>{ev}</ul>")
+                            + (f"<h4>Why this type?</h4><ul>{ev}</ul>" if ev else ""))
 
     # --- web UI / context menu -------------------------------------------------------------
     def selected_snap(self) -> dict | None:
-        idx = self.table.selectionModel().selectedRows(1)
-        return self.snapshots.get(idx[0].data()) if idx else None
+        idx = self.table.selectionModel().selectedRows(0)
+        return self.snapshots.get(idx[0].data(SID_ROLE)) if idx else None
 
     def open_web_ui(self, url: str | None = None) -> None:
         snap = self.selected_snap()
@@ -403,6 +497,9 @@ class MainWindow(QMainWindow):
     def edit_device(self) -> None:
         snap = self.selected_snap()
         if not snap:
+            return
+        if snap.get("offline"):
+            self.statusBar().showMessage("Offline devices can be edited once they answer a scan again")
             return
         device = next((d for d in self.devices if d.ip == snap["ip"]), None)
         if device is None:            # live rows exist before the scan finishes; corrections need the final device

@@ -3,10 +3,12 @@ from __future__ import annotations
 
 import argparse
 import signal
+import sqlite3
 import sys
 import threading
+import time
 
-from . import __version__, devtypes, export, labels, oui, paths, rules, scanner
+from . import __version__, devtypes, export, history, labels, oui, paths, rules, scanner
 from .discovery import net
 
 
@@ -38,6 +40,14 @@ def _parser() -> argparse.ArgumentParser:
     lab.add_argument("--suggest-rules", action="store_true",
                      help="print custom vendor rules derived from your corrections (review, then save as vendor.toml)")
     lab.add_argument("--no-labels", action="store_true", help="ignore your corrections for this scan")
+    hist = p.add_argument_group("history (what appeared, left, returned or moved between scans)")
+    hist.add_argument("--no-history", action="store_true", help="don't record this scan (history is on by default)")
+    hist.add_argument("--known", action="store_true", help="list every device ever seen, with first/last seen")
+    hist.add_argument("--events", nargs="?", type=int, const=30, metavar="N",
+                      help="show the last N change events (default 30) and exit")
+    hist.add_argument("--watch", type=float, metavar="MINUTES",
+                      help="rescan every MINUTES and print changes (new / returned / moved / left)")
+    hist.add_argument("--forget-history", action="store_true", help="delete the recorded history")
     p.add_argument("--services", action="store_true",
                    help="include each device's advertised services in txt/md output (always in json/xlsx/html)")
     p.add_argument("--no-snmp", action="store_true", help="don't query SNMP (read-only GETs; default community 'public')")
@@ -98,11 +108,79 @@ def _label_command(args) -> int | None:
         return 2
 
 
+def _scan(args, ifaces, stop, log):
+    return scanner.scan(ifaces, timeout=args.timeout, port_scan=not args.no_ports, snmp=not args.no_snmp,
+                        snmp_communities=tuple(args.snmp_community or ("public",)),
+                        labels=not args.no_labels, stop=stop, log=log)
+
+
+def _record(devices, ifaces, args, stop):
+    """Store the scan in the history; None when disabled, cancelled (a partial scan would make half the
+    network look gone) or unavailable. History trouble never costs you the scan results."""
+    if args.no_history or stop.is_set():
+        return None
+    try:
+        return history.History().record(devices, [str(i.network) for i in ifaces])
+    except (sqlite3.Error, OSError) as e:
+        print(f"netscout: history unavailable ({e})", file=sys.stderr)
+        return None
+
+
+def _watch(args, ifaces, stop, log) -> int:
+    nets = ", ".join(str(i.network) for i in ifaces)
+    print(f"watching {nets} every {args.watch:g} min (Ctrl-C to stop); changes are logged to the history",
+          file=sys.stderr)
+    while not stop.is_set():
+        try:
+            devices = _scan(args, ifaces, stop, log)
+        except RuntimeError as e:
+            print(f"netscout: {e}", file=sys.stderr)
+            return 1
+        diff = _record(devices, ifaces, args, stop)
+        stamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        lines = diff.summary_lines() if diff else []
+        for line in lines or [f"{len(devices)} devices, no changes"]:
+            print(f"{stamp}  {line}", flush=True)
+        stop.wait(args.watch * 60)
+    return 130
+
+
+def _history_command(args) -> int | None:
+    if not (args.known or args.events is not None or args.forget_history):
+        return None
+    try:
+        h = history.History()
+        fmt = lambda ts: time.strftime("%Y-%m-%d %H:%M", time.localtime(ts))
+        if args.forget_history:
+            h.clear()
+            print(f"history cleared ({h.path})")
+        elif args.known:
+            known = h.known()
+            if not known:
+                print(f"no devices recorded yet ({h.path})")
+            for k in known:
+                state = f"offline (missed {k.missed} scans)" if k.offline else "online"
+                print(f"{k.last_ip:<15} {k.name[:26]:<26} {k.type:<14} first {fmt(k.first_seen)}  "
+                      f"last {fmt(k.last_seen)}  seen {k.seen_count}x  {state}")
+        else:
+            events = h.events(args.events)
+            if not events:
+                print("no events yet (the first scan of a network is just a baseline)")
+            for e in events:
+                print(f"{fmt(e.ts)}  {e.kind.upper():<10} {e.name[:26]:<26} {e.detail}")
+        return 0
+    except (sqlite3.Error, OSError) as e:
+        print(f"netscout: history unavailable ({e})", file=sys.stderr)
+        return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     for s in (sys.stdout, sys.stderr):
         s.reconfigure(encoding="utf-8", errors="replace")
     args = _parser().parse_args(argv)
     rc = _label_command(args)
+    if rc is None:
+        rc = _history_command(args)
     if rc is not None:
         return rc
     if args.check_rules:
@@ -144,16 +222,23 @@ def main(argv: list[str] | None = None) -> int:
     stop = threading.Event()
     signal.signal(signal.SIGINT, lambda *_: stop.set())
     log = (lambda m: print(f"[netscout] {m}", file=sys.stderr)) if args.verbose else (lambda m: None)
+    if args.watch:
+        if args.output or args.format or args.no_history:
+            print("netscout: --watch prints change events from the history; it can't be combined with "
+                  "-o / -f / --no-history", file=sys.stderr)
+            return 2
+        return _watch(args, ifaces, stop, log)
     if not args.verbose:
         print("Scanning " + ", ".join(str(i.network) for i in ifaces) + " …", file=sys.stderr)
 
     try:
-        devices = scanner.scan(ifaces, timeout=args.timeout, port_scan=not args.no_ports, snmp=not args.no_snmp,
-                                 snmp_communities=tuple(args.snmp_community or ("public",)),
-                                 labels=not args.no_labels, stop=stop, log=log)
+        devices = _scan(args, ifaces, stop, log)
     except RuntimeError as e:
         print(f"netscout: {e}", file=sys.stderr)
         return 1
+    diff = _record(devices, ifaces, args, stop)
+    for line in (diff.summary_lines() if diff else []):
+        print(f"history: {line}", file=sys.stderr)
 
     meta = {"networks": ", ".join(str(i.network) for i in ifaces), "with_services": args.services}
     for fmt, path in targets:

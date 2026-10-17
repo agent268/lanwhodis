@@ -78,6 +78,7 @@ class Device:
     web_urls: dict[str, tuple[str, int]] = field(default_factory=dict)   # url -> (source, rank; lower wins)
     advertised: list[ServiceRecord] = field(default_factory=list)       # structured service listing
     recog: list[RecogMatch] = field(default_factory=list)               # banner fingerprint matches
+    history: dict | None = None        # set by history.History.record: status new/returned/known, first_seen, ...
     # user corrections (labels.py); auto_* keep the scanner's own verdict so it stays visible
     user_name: str | None = None
     user_type: str | None = None
@@ -167,6 +168,7 @@ class Device:
             "advertised": [r.to_dict() for r in sorted(
                 self.advertised, key=lambda r: (r.protocol, r.kind, r.name, r.port or 0))],
             "recog": [m.to_dict() for m in self.recog],
+            "history": dict(self.history) if self.history else None,
             "user": ({"name": self.user_name, "type": self.user_type, "notes": self.user_notes,
                       "auto_type": self.auto_type, "auto_type_label": devtypes.label(self.auto_type or "unknown"),
                       "auto_confidence": round(self.auto_confidence, 2)}

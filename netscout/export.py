@@ -6,6 +6,7 @@ import html
 import io
 import json
 import socket
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable
@@ -19,7 +20,7 @@ EXT_TO_FORMAT = {".json": "json", ".html": "html", ".htm": "html", ".md": "md", 
                  ".csv": "csv", ".xlsx": "xlsx", ".pdf": "pdf", ".txt": "txt"}
 
 COLUMNS = [("IP", "ip"), ("Name", "name"), ("Type", "type_label"), ("OS", "os"), ("Vendor", "vendor"), ("MAC", "mac"),
-           ("Model", "model"), ("Confidence", "conf"), ("Open ports", "ports"), ("Services", "services"), ("Web UI", "web_url"), ("Notes", "notes")]
+           ("Model", "model"), ("Confidence", "conf"), ("Open ports", "ports"), ("Services", "services"), ("Web UI", "web_url"), ("Notes", "notes"), ("First seen", "first_seen")]
 
 
 def format_for_path(path: str | Path) -> str | None:
@@ -34,6 +35,8 @@ def _rows(devices: Iterable[Device]) -> list[dict]:
         x["ports"] = ", ".join(map(str, x["open_ports"]))
         x["services"] = ", ".join(s.split(":", 1)[-1] for s in x["services"] if not s.startswith("local:"))
         x["notes"] = (x.get("user") or {}).get("notes") or ""
+        first = (x.get("history") or {}).get("first_seen")
+        x["first_seen"] = time.strftime("%Y-%m-%d", time.localtime(first)) if first else ""
         for k in ("vendor", "mac", "model", "os", "web_url"):
             x[k] = x[k] or ""
         rows.append(x)
