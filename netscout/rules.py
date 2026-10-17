@@ -31,7 +31,7 @@ log = logging.getLogger("netscout.rules")
 
 Votes = dict[str, float]
 RegexRules = list[tuple["re.Pattern[str]", Votes]]
-FILES = ("vendor.toml", "names.toml", "text.toml", "services.toml", "ports.toml", "os.toml")
+FILES = ("vendor.toml", "names.toml", "text.toml", "services.toml", "ports.toml", "os.toml", "recog.toml")
 
 
 class RuleError(ValueError):
@@ -58,6 +58,8 @@ class RuleSet:
     os_vendor: list[OsRule] = field(default_factory=list)
     os_ttl: dict[int, dict[str, float]] = field(default_factory=dict)
     os_type_votes: dict[tuple[str, str | None], Votes] = field(default_factory=dict)
+    recog_devices: dict[str, Votes] = field(default_factory=dict)     # Recog hw/os.device -> type votes
+    recog_os: dict[str, str] = field(default_factory=dict)            # Recog os.family -> our OS family
     errors: list[str] = field(default_factory=list)      # user-rule problems (lenient mode)
 
 
@@ -135,6 +137,21 @@ def _apply(rs: RuleSet, name: str, doc: dict, strict: bool, src: str) -> None:
                 if strict:
                     raise
                 rs.errors.append(str(e))
+    elif name == "recog.toml":
+        for key, raw in doc.get("hw_device", {}).items():
+            try:
+                rs.recog_devices[key] = _votes(raw, f"{src} hw_device {key!r}")
+            except RuleError as e:
+                if strict:
+                    raise
+                rs.errors.append(str(e))
+        for key, fam in doc.get("os_family", {}).items():
+            if isinstance(fam, str) and fam:
+                rs.recog_os[key] = fam
+            elif strict:
+                raise RuleError(f"{src} os_family {key!r}: must map to a non-empty string")
+            else:
+                rs.errors.append(f"{src} os_family {key!r}: must map to a non-empty string")
     elif name == "os.toml":
         rs.os_text += _each(doc.get("text", []), "text", lambda r, w: _os_rule(r, w, True), strict, rs, src)
         rs.os_vendor += _each(doc.get("vendor", []), "vendor", lambda r, w: _os_rule(r, w, True), strict, rs, src)

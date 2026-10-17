@@ -5,7 +5,7 @@ import ipaddress
 import threading
 from typing import Callable
 
-from . import classify
+from . import classify, recog
 from .discovery import mdns, net, probe, ssdp, sweep, wsd
 from .discovery.base import Iface, ScanContext
 from .model import Device, DeviceTable
@@ -69,6 +69,7 @@ def scan(
             table.get(d.ip, arp[d.ip])
 
     for d in devices:
+        recog.annotate(d)
         classify.classify(d)
         table.touch(d)
     return devices

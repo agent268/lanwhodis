@@ -7,7 +7,7 @@ deliberately out of scope here. The rules are data: see rules.py and netscout/da
 """
 from __future__ import annotations
 
-from . import rules
+from . import recog, rules
 from .model import Device, Evidence
 
 MIN_CONFIDENCE = .25     # below this a lone weak hint (e.g. a Microsoft OUI) isn't worth showing
@@ -37,6 +37,11 @@ def detect(d: Device) -> None:
             if m:
                 detail = m.expand(r.detail) if r.detail and "\\" in r.detail else r.detail
                 votes.append((r.family, detail, r.weight, "text", blob[:70]))
+    for m in d.recog:
+        found = recog.os_family_and_detail(m, rs.recog_os)
+        if found:
+            votes.append((found[0], found[1], 0.8 * recog.certainty(m, "os"), "recog",
+                          f"{m.db}: {m.description}"[:70]))
     for p in d.open_ports:
         r = rs.os_ports.get(p)
         if r and r.weight > 0:

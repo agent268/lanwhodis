@@ -95,6 +95,7 @@ def _banners(d: Device) -> None:
             d.facts[f"http{port}_title"] = title.group(1)
         if www and "realm=" in www.lower():
             d.text.append(www)   # many cameras/routers put the model in the auth realm
+            d.facts[f"http{port}_wwwauth"] = www[:200]
     if 22 in d.open_ports:
         try:
             with socket.create_connection((d.ip, 22), timeout=1.5) as s:

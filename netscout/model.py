@@ -44,6 +44,18 @@ class ServiceRecord:
                 "port": self.port, "url": self.url, "soap": self.soap, "details": dict(self.details)}
 
 
+@dataclass
+class RecogMatch:
+    """A banner that matched a Rapid7 Recog fingerprint (see recog.py)."""
+    db: str                        # Recog database key, e.g. "ssh.banner"
+    text: str                      # the banner that matched
+    description: str
+    params: dict[str, str] = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return {"db": self.db, "text": self.text, "description": self.description, "params": dict(self.params)}
+
+
 _SERVICES_LOCK = threading.Lock()   # discovery modules add records from worker threads
 
 
@@ -65,6 +77,7 @@ class Device:
     text: list[str] = field(default_factory=list)             # free-text blobs for keyword rules
     web_urls: dict[str, tuple[str, int]] = field(default_factory=dict)   # url -> (source, rank; lower wins)
     advertised: list[ServiceRecord] = field(default_factory=list)       # structured service listing
+    recog: list[RecogMatch] = field(default_factory=list)               # banner fingerprint matches
     is_gateway: bool = False
     random_mac: bool = False
     device_type: str = "unknown"
@@ -141,6 +154,7 @@ class Device:
             "confidence": round(self.confidence, 2),
             "advertised": [r.to_dict() for r in sorted(
                 self.advertised, key=lambda r: (r.protocol, r.kind, r.name, r.port or 0))],
+            "recog": [m.to_dict() for m in self.recog],
             "web_url": self.web_url,
             "web_urls": [{"url": u, "source": s}
                          for u, (s, r) in sorted(self.web_urls.items(), key=lambda kv: (kv[1][1], kv[0]))],

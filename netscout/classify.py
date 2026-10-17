@@ -7,7 +7,7 @@ reasonable support. The rules themselves are data: see rules.py and netscout/dat
 """
 from __future__ import annotations
 
-from . import devtypes, osdetect, rules
+from . import devtypes, osdetect, recog, rules
 from .model import Device, Evidence
 
 # Device types that can plausibly run Windows (PCs, servers, Windows handhelds like ROG Ally, signage
@@ -59,6 +59,18 @@ def gather(d: Device) -> list[Evidence]:
         for rx, votes in rs.text:
             if rx.search(bl):
                 _vote(ev, "text", votes, b[:80])
+
+    for m in d.recog:       # Rapid7 Recog banner fingerprints (filled in by recog.annotate)
+        for key, which in (("hw.device", "hw"), ("os.device", "os")):
+            votes = rs.recog_devices.get(m.params.get(key, ""))
+            if votes:
+                c = recog.certainty(m, which)
+                _vote(ev, "recog", {t: w * c for t, w in votes.items()}, f"{m.db}: {m.description}"[:80])
+        hw_vendor = m.params.get("hw.vendor")
+        if hw_vendor:
+            for rx, votes in rs.vendor:
+                if rx.search(hw_vendor.lower()):
+                    _vote(ev, "recog", votes, f"{m.db}: {hw_vendor}"[:80])
 
     osdetect.detect(d)
     if d.os_hint:

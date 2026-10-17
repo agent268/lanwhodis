@@ -66,3 +66,11 @@ location and validates them; a bad rule is reported and skipped, never fatal):
 
 Files: `vendor`, `names` (hostnames/friendly names), `text` (banners, models, titles), `services`, `ports`, `os`.
 Weights for one type combine by noisy-OR; valid types are in `netscout/devtypes.py`.
+
+## Banner fingerprinting (Rapid7 Recog)
+
+SSH, HTTP (Server / `<title>` / WWW-Authenticate), RTSP, SNMP and mDNS `_device-info` banners are matched against
+bundled [Rapid7 Recog](https://github.com/rapid7/recog) databases (BSD-2-Clause, notice in `netscout/data/recog/`),
+pinned to a commit recorded in `data/recog/SOURCE.txt`. Results (product, OS vendor/version, hardware device and
+model) feed OS detection and the device-type classifier through `data/rules/recog.toml`. Refresh with
+`python tools/update_recog.py`.

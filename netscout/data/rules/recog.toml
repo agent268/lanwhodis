@@ -1,0 +1,62 @@
+# How Rapid7 Recog fingerprint results map onto netscout concepts (see netscout/recog.py).
+# Recog values with no entry here carry no vote (Test Instrument, Tape Library, PLC, ...).
+
+# Recog hw.device / os.device value -> device-type votes. A Recog hw.certainty/os.certainty
+# parameter, when present, scales the weight.
+[hw_device]
+"Laptop" = { laptop = 0.75 }
+"Desktop" = { computer = 0.7 }
+"Router" = { router = 0.65 }
+"Broadband Router" = { router = 0.7, gateway = 0.3 }
+"Cable Modem" = { gateway = 0.7 }
+"ADSL Modem" = { gateway = 0.7 }
+"DSL Modem" = { gateway = 0.7 }
+"Mobile Phone" = { phone = 0.75 }
+"Tablet" = { tablet = 0.75 }
+"Printer" = { printer = 0.8 }
+"Multifunction Device" = { printer = 0.8 }
+"Print Server" = { printer = 0.6 }
+"Scanner" = { printer = 0.4 }
+"Switch" = { switch = 0.75 }
+"WAP" = { access_point = 0.75 }
+"WLAN Repeater" = { extender = 0.8 }
+"Powerline" = { extender = 0.5 }
+"Wireless Controller" = { access_point = 0.4 }
+"IP Camera" = { camera = 0.85 }
+"Web Cam" = { camera = 0.85 }
+"DVR" = { camera = 0.5 }
+"Cloud Network Video Recorder" = { camera = 0.5 }
+"Video Encoder" = { camera = 0.5 }
+"Media Server" = { media_server = 0.65 }
+"Media Player" = { streaming = 0.65 }
+"Media Receiver" = { streaming = 0.5, speaker = 0.2 }
+"AV Receiver" = { speaker = 0.6 }
+"Network Audio" = { speaker = 0.55 }
+"VoIP" = { voip = 0.75 }
+"VoIP Gateway" = { voip = 0.4 }
+"SIP Gateway" = { voip = 0.4 }
+"Firewall" = { router = 0.45 }
+"VPN" = { router = 0.35 }
+"SD-WAN Appliance" = { router = 0.5 }
+"NAS" = { nas = 0.85 }
+"Storage Appliance" = { nas = 0.5 }
+"Storage" = { nas = 0.4 }
+"Hypervisor" = { server = 0.7 }
+"Lights Out Management" = { server = 0.5 }
+"Light Bulb" = { light = 0.4 }   # also what Recog says for the Hue *bridge's* page title, so keep it modest
+"Access Control" = { iot = 0.4 }
+"Building Automation" = { iot = 0.45 }
+"Environment Control" = { thermostat = 0.3, iot = 0.3 }
+"Sensor" = { iot = 0.5 }
+"Alarm Panel" = { iot = 0.5 }
+"Relay Controller" = { smart_plug = 0.3, iot = 0.3 }
+"Power Relay" = { smart_plug = 0.3, iot = 0.3 }
+"Power Device" = { iot = 0.3 }
+"UPS" = { iot = 0.3 }
+"Wireless Presenter" = { wireless_display = 0.6 }
+"Display Controller" = { signage = 0.5 }
+
+# Recog os.family -> netscout OS family name. Families not listed here pass through unchanged.
+[os_family]
+"Mac OS X" = "macOS"
+"IOS" = "Cisco IOS"

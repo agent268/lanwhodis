@@ -81,8 +81,10 @@ def run(ctx: ScanContext) -> None:
                         break
                 if props.get("manufacturer") or props.get("mfg"):
                     d.facts.setdefault("manufacturer", props.get("manufacturer") or props["mfg"])
-                if short == "_device-info._tcp" and props.get("model"):
-                    d.text.append(props["model"])
+                if short == "_device-info._tcp":
+                    if props.get("model"):
+                        d.text.append(props["model"])
+                    d.facts["device_info_txt"] = "|".join(f"{k}={v}" for k, v in props.items())[:400]
                 ctx.table.touch(d)
 
         with ThreadPoolExecutor(max_workers=16) as pool:
