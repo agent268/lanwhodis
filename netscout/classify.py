@@ -12,6 +12,11 @@ import re
 from . import devtypes, osdetect
 from .model import Device, Evidence
 
+# Device types that can plausibly run Windows (PCs, servers, Windows handhelds like ROG Ally, signage
+# players). Everything else - cameras, doorbells, TVs, plugs, printers, routers ... - does not.
+WINDOWS_PLAUSIBLE = {"computer", "laptop", "server", "handheld_console", "media_server", "signage",
+                     "nas", "unknown"}
+
 SPECIFIC_THRESHOLD = 0.45   # a non-generic type at/above this beats any generic type
 UNKNOWN_BELOW = 0.20
 
@@ -399,6 +404,12 @@ def classify(d: Device) -> Device:
 
     if d.confidence < UNKNOWN_BELOW:
         d.device_type = "unknown"
+    # A TTL-only "Windows" guess is the same hint embedded stacks give; once the type is settled by
+    # stronger evidence, drop it if that type doesn't realistically run Windows (doorbell, TV, ...).
+    if (d.os_hint == "Windows" and d.os_detail == "TTL guess"
+            and d.device_type not in WINDOWS_PLAUSIBLE):
+        d.os_hint = d.os_detail = None
+        d.os_confidence = 0.0
     if d.os_hint == "iOS" and d.device_type == "tablet":
         d.os_hint = "iPadOS"        # iOS and iPadOS share every network signal; the device type decides
     return d

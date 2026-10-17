@@ -303,3 +303,27 @@ def test_local_os_detail_keeps_case():
 def test_gaming_laptop_hostnames():
     for name in ("Alex-Helios-18", "Predator-Triton-500", "Nitro-5", "alienware-m16"):
         assert classify.classify(make(hostname=name)).device_type == "laptop", name
+
+
+def test_port_8291_alone_is_not_routeros():
+    # regression: an HP LaserJet listens on 8291 and was labelled RouterOS
+    d = os_of(ports=[80, 515, 631, 8291, 9100])
+    assert d.os_hint is None
+    assert classify.classify(make()).device_type == "unknown"
+
+
+def test_ring_doorbell_is_not_windows():
+    # regression: TTL 128 alone made a Ring doorbell report "Windows (TTL guess)"
+    d = make(mac=None)
+    d.vendor = "Ring LLC"
+    d.facts["ttl"] = "128"
+    classify.classify(d)
+    assert d.device_type == "doorbell" and d.os_hint is None
+
+
+def test_confident_windows_evidence_survives_type_check():
+    d = make(hostname="Alex-Arm64")
+    d.facts["ttl"] = "128"
+    d.open_ports |= {135, 445}
+    classify.classify(d)
+    assert d.device_type == "computer" and d.os_hint == "Windows"

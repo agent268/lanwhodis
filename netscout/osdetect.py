@@ -65,7 +65,7 @@ _TEXT: list[Rule] = [
 _PORT: dict[int, tuple[str, str | None, float]] = {
     3389: ("Windows", None, .5), 135: ("Windows", None, .5), 5985: ("Windows", None, .4),
     62078: ("iOS", None, .9), 5555: ("Android", None, .5), 548: ("macOS", None, .4),
-    8060: ("Roku OS", None, .9), 8291: ("RouterOS", None, .3), 5353: ("Linux", None, 0.0),
+    8060: ("Roku OS", None, .9), 8291: ("RouterOS", None, .2),   # HP printers also listen here; only counts with corroboration 5353: ("Linux", None, 0.0),
 }
 
 _VENDOR: list[tuple[str, str, str | None, float]] = [

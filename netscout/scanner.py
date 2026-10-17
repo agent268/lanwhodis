@@ -61,6 +61,13 @@ def scan(
         log("reading banners / reverse DNS")
         probe.enrich(ctx, devices)
 
+    # TCP probes force ARP resolution, so hosts that stayed silent in the sweep now have neighbor
+    # entries; fill their MACs (and so vendor/OUI evidence) before classifying.
+    arp = net.read_arp()
+    for d in devices:
+        if not d.mac and d.ip in arp:
+            table.get(d.ip, arp[d.ip])
+
     for d in devices:
         classify.classify(d)
         table.touch(d)
