@@ -28,7 +28,8 @@ lanwhodis-gui = "lanwhodis.gui.app:main"
 include = ["lanwhodis*"]
 
 [tool.setuptools.package-data]
-lanwhodis = ["data/*", "data/rules/*.toml", "data/recog/*"]
+lanwhodis = ["data/*", "data/rules/*.toml", "data/recog/*", "gui/assets/icons/*", "gui/qml/*.qml",
+             "gui/qml/LanWhodis/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -21,7 +21,22 @@ runs on Windows, Linux and SteamOS (desktop mode). No elevation required.
     lanwhodis --list-interfaces ; lanwhodis -i Wi-Fi --no-ports -v
     lanwhodis-gui
 
-Formats: json, html, md, csv, xlsx, pdf, txt (GUI: Export… button).
+Formats: json, html, md, csv, xlsx, pdf, txt (GUI: the export button, or Ctrl+E).
+
+## The GUI
+
+`lanwhodis-gui` is a Qt Quick (QML) app in the same visual language as steamos-fm: deep navy surfaces with a blue
+accent (an orange Steam Deck theme and a light theme are one click away), rounded cards, boxed sections with
+letter-spaced titles, and [Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) (MIT)
+recoloured per theme. Each device gets a tinted icon tile in its category colour.
+
+- **Browse:** card grid or dense list, category sidebar with counts, instant search, New / Offline filters.
+- **Detail panel:** what it is and how sure we are, quick actions (open web UI, edit, copy IP/MAC), history, every
+  advertised service, and the evidence behind the verdict.
+- **Keys:** arrows to move, `O` open web UI, `E` edit, `Ctrl+F` search, `F5` scan, `Ctrl+E` export,
+  `Ctrl+T` theme, `Ctrl +/-/0` zoom. Everything is also clickable.
+- **Layout:** `lanwhodis/gui/qml/` is the UI (components in `qml/LanWhodis/`, tokens in `Theme.qml`); all logic is in
+  `gui/backend.py`, so the QML is rendering only. Icons are fetched by `tools/update_icons.py` at a pinned commit.
 
 ## How devices are identified
 
@@ -95,7 +110,8 @@ Both are read-only and unauthenticated, on by default, and skipped with `--no-sn
 
 ## Corrections (device memory)
 
-Wrong guess? Fix it once and it sticks. GUI: right-click a device -> **Edit name / type / notes...** (reset any time).
+Wrong guess? Fix it once and it sticks. GUI: select a device and press **E** (or click **Edit**) to set its name, type
+and notes; reset any time.
 CLI:
 
     lanwhodis --label aa:bb:cc:dd:ee:01 --set-type camera --set-name "Porch Cam" --set-notes "front door"
@@ -120,5 +136,6 @@ missing two consecutive scans. Networks are tracked independently, and a stopped
     lanwhodis --known              # every device ever seen: first/last seen, online/offline
     lanwhodis --events 50          # recent change events
 
-GUI: a Status column (New / Returned / Offline), remembered-but-silent devices shown dimmed ("Show offline"), and
+GUI: NEW / BACK / OFFLINE badges on the cards, a "New or back" and "Offline" filter in the sidebar, remembered-but-silent
+devices shown dimmed (toggle "Show offline"), and
 a summary in the status bar. Exports gain a "First seen" column; JSON has a `history` object per device.
