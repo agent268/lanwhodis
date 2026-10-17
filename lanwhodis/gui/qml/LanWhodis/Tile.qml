@@ -6,6 +6,7 @@ Rectangle {
 
     property string iconName: ""
     property color tileColor: Theme.accent
+    property color glyphColor: tileColor     // darker variant in the light theme (see Theme.labelColor)
     property real size: Theme.unit * 3
     property bool dim: false
 
@@ -19,7 +20,7 @@ Rectangle {
     Icon {
         anchors.centerIn: parent
         name: tile.iconName
-        tint: tile.tileColor
+        tint: tile.glyphColor
         size: tile.size * 0.54
         opacity: tile.dim ? 0.45 : 1.0
     }

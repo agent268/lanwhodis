@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import QUrl
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
 
@@ -17,6 +17,19 @@ from .backend import Backend
 from .iconprovider import IconProvider
 
 QML_DIR = Path(__file__).parent / "qml"
+ICON_PATH = Path(__file__).parent / "assets" / "app" / "lanwhodis.ico"
+APP_ID = "LanWhodis.LanWhodis"
+
+
+def _claim_taskbar_identity() -> None:
+    """Windows groups the taskbar button by process (python.exe) unless the app declares its own ID."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
+    except (AttributeError, OSError):
+        pass
 
 
 def create_engine(backend: Backend) -> QQmlApplicationEngine:
@@ -30,10 +43,12 @@ def create_engine(backend: Backend) -> QQmlApplicationEngine:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _claim_taskbar_identity()
     QQuickStyle.setStyle("Basic")            # our components draw themselves; avoid native-style interference
     app = QGuiApplication(argv if argv is not None else sys.argv)
     app.setApplicationName("LanWhodis")
     app.setOrganizationName("LanWhodis")
+    app.setWindowIcon(QIcon(str(ICON_PATH)))
     backend = Backend()
     engine = create_engine(backend)
     if not engine.rootObjects():

@@ -12,6 +12,8 @@ Item {
 
     visible: false
     z: 100
+    Accessible.role: Accessible.Dialog
+    Accessible.name: "Edit device"
 
     function openFor(current) {
         cur = current
@@ -60,7 +62,8 @@ Item {
 
                 Row {
                     spacing: Theme.unit * 0.8
-                    Tile { size: Theme.unit * 3; iconName: dlg.cur.iconName || ""; tileColor: dlg.cur.color || Theme.accent }
+                    Tile { size: Theme.unit * 3; iconName: dlg.cur.iconName || ""; tileColor: dlg.cur.color || Theme.accent
+                          glyphColor: Theme.labelColor(dlg.cur.labelDark || dlg.cur.color || Theme.accent, dlg.cur.labelLight || dlg.cur.color || Theme.accent) }
                     Column {
                         anchors.verticalCenter: parent.verticalCenter
                         Text { text: "Edit device"; color: Theme.text; font.pixelSize: Theme.fontSizeXl; font.bold: true }
@@ -107,6 +110,9 @@ Item {
                     spacing: Theme.unit * 0.4
                     // first option: keep what the scanner says
                     Rectangle {
+                        Accessible.role: Accessible.RadioButton
+                        Accessible.name: "Auto-detected type"
+                        Accessible.checked: dlg.chosenType === ""
                         height: Theme.unit * 1.8
                         width: autoRow.implicitWidth + Theme.unit * 1.1
                         radius: height / 2
@@ -130,6 +136,9 @@ Item {
                             width: tRow.implicitWidth + Theme.unit * 1.1
                             radius: height / 2
                             readonly property bool on: dlg.chosenType === modelData.key
+                            Accessible.role: Accessible.RadioButton
+                            Accessible.name: modelData.label
+                            Accessible.checked: on
                             color: on ? Theme.alpha(modelData.color, 0.28) : Theme.alpha(Theme.text, 0.06)
                             border.width: 1
                             border.color: on ? modelData.color : Theme.alpha(Theme.text, 0.15)
@@ -137,7 +146,7 @@ Item {
                                 id: tRow
                                 anchors.centerIn: parent
                                 spacing: Theme.unit * 0.3
-                                Icon { name: modelData.icon; tint: modelData.color; size: Theme.fontSize * 1.2; anchors.verticalCenter: parent.verticalCenter }
+                                Icon { name: modelData.icon; tint: Theme.labelColor(modelData.labelDark, modelData.labelLight); size: Theme.fontSize * 1.2; anchors.verticalCenter: parent.verticalCenter }
                                 Text { text: modelData.label; color: Theme.text; font.pixelSize: Theme.fontSizeSm; anchors.verticalCenter: parent.verticalCenter }
                             }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: dlg.chosenType = modelData.key }

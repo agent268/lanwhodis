@@ -52,6 +52,21 @@ CATEGORY_COLOR = {
 }
 
 
+# Category colours are right for icons and tiles (3:1) but several fail as 15 px bold label TEXT (4.5:1), most
+# of all on the light theme. Same hues, nudged until they reach 4.5:1 on that theme's card surface; a test
+# re-measures them against the QML theme. Dark and Deck share a surface, so they share these.
+CATEGORY_LABEL_LIGHT = {"Computers": "#3e72cf", "Mobile": "#9358d1", "Media": "#b85840", "Gaming": "#1f836b",
+                        "Smart Home": "#966d13", "Peripherals": "#5f7890", "Network": "#2b7c9e", "Other": "#6d7581"}
+CATEGORY_LABEL_DARK = {"Peripherals": "#728eab"}          # every other category colour is already readable
+
+
+def label_colors(device_type: str) -> tuple[str, str]:
+    """(dark/deck, light) text colours for a device type's label."""
+    cat = devtypes.category(device_type)
+    base = CATEGORY_COLOR.get(cat, CATEGORY_COLOR["Other"])
+    return CATEGORY_LABEL_DARK.get(cat, base), CATEGORY_LABEL_LIGHT.get(cat, base)
+
+
 def color(device_type: str) -> str:
     return CATEGORY_COLOR.get(devtypes.category(device_type), CATEGORY_COLOR["Other"])
 

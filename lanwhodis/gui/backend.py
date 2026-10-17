@@ -29,7 +29,7 @@ CATEGORY_ICON = {"Computers": "device_computer", "Mobile": "device_phone", "Medi
                  "Gaming": "device_game_console", "Smart Home": "ui_home", "Peripherals": "device_printer",
                  "Network": "device_router", "Other": "device_unknown"}
 _ROLES = ["sid", "name", "ip", "ipKey", "mac", "typeKey", "typeLabel", "category", "color", "iconName", "vendor",
-          "os", "confidence", "status", "edited", "offline", "webUrl", "subtitle", "search"]
+          "os", "confidence", "status", "edited", "offline", "webUrl", "subtitle", "search", "labelDark", "labelLight"]
 
 
 def _ago(ts: float) -> str:
@@ -64,6 +64,7 @@ def row_from_snapshot(snap: dict) -> dict:
     hist = snap.get("history") or {}
     status = "offline" if offline else (hist.get("status") if hist.get("status") in ("new", "returned") else "")
     typ = snap["type"]
+    label_dark, label_light = icons.label_colors(typ)
     try:
         a, b, c, d = (int(p) for p in snap["ip"].split("."))
         ip_key = (a << 24) | (b << 16) | (c << 8) | d
@@ -77,6 +78,7 @@ def row_from_snapshot(snap: dict) -> dict:
             "confidence": 0.0 if offline else float(snap.get("confidence", 0.0)), "status": status,
             "edited": bool(user and user.get("type")), "offline": offline, "webUrl": snap.get("web_url") or "",
             "subtitle": f"{snap['type_label']} · {detail}" if detail else snap["type_label"],
+            "labelDark": label_dark, "labelLight": label_light,
             "search": " ".join([snap["name"], snap["ip"], snap.get("mac") or "", vendor, snap["type_label"],
                                 snap.get("os") or "", snap.get("model") or ""]).lower()}
 
@@ -204,6 +206,7 @@ class Backend(QObject):
     currentChanged = Signal()
     interfacesChanged = Signal()
     themeChanged = Signal()
+    reduceMotionChanged = Signal()
     zoomChanged = Signal()
     filtersChanged = Signal()
     toast = Signal(str)
@@ -231,6 +234,12 @@ class Backend(QObject):
         self._theme = s.get("theme") or ("deck" if os.environ.get("SteamDeck") == "1" else "dark")
         self._zoom = float(s.get("zoom", 1.0))
         self._view = s.get("view", "grid")
+        self._reduce_motion = self._os_reduces_motion()
+        # keep the Qt objects referenced: PySide frees the C++ child when its parent wrapper is collected
+        self._style_hints = QGuiApplication.styleHints() if QGuiApplication.instance() else None
+        self._a11y_hints = self._style_hints.accessibility() if self._style_hints is not None else None
+        if self._a11y_hints is not None and hasattr(self._a11y_hints, "motionPreferenceChanged"):
+            self._a11y_hints.motionPreferenceChanged.connect(self._motion_changed)
         self._counts_timer = QTimer(self, singleShot=True, interval=120)
         self._counts_timer.timeout.connect(self._emit_counts)
 
@@ -249,6 +258,28 @@ class Backend(QObject):
                                         encoding="utf-8")
         except OSError:
             pass
+
+    # ---- reduced motion ------------------------------------------------------------------
+    @staticmethod
+    def _os_reduces_motion() -> bool:
+        if os.environ.get("LANWHODIS_REDUCE_MOTION") == "1":
+            return True
+        if QGuiApplication.instance() is None:
+            return False
+        style_hints = QGuiApplication.styleHints()          # hold it: the accessibility object is its child
+        hints = style_hints.accessibility()
+        try:
+            return hints.motionPreference() == Qt.MotionPreference.ReducedMotion
+        except AttributeError:                              # Qt older than 6.10 has no motion preference
+            return False
+
+    def _motion_changed(self, *_) -> None:
+        self._reduce_motion = self._os_reduces_motion()
+        self.reduceMotionChanged.emit()
+
+    @Property(bool, notify=reduceMotionChanged)
+    def reduceMotion(self) -> bool:
+        return self._reduce_motion
 
     # ---- properties ----------------------------------------------------------------------
     @Property(QObject, constant=True)
@@ -274,12 +305,14 @@ class Backend(QObject):
     @Property("QVariantList", notify=countsChanged)
     def categories(self) -> list:
         rows = [r for r in self._model.rows() if self._show_offline or not r["offline"]]
-        out = [{"key": "", "label": "All devices", "icon": "ui_apps", "color": "", "count": len(rows)}]
+        out = [{"key": "", "label": "All devices", "icon": "ui_apps", "color": "", "labelDark": "", "labelLight": "",
+                "count": len(rows)}]
         for c in CATEGORIES:
             n = sum(1 for r in rows if r["category"] == c)
             if n:
                 out.append({"key": c, "label": c, "icon": CATEGORY_ICON.get(c, "device_unknown"),
-                            "color": icons.CATEGORY_COLOR[c], "count": n})
+                            "color": icons.CATEGORY_COLOR[c], "labelDark": icons.CATEGORY_LABEL_DARK.get(c, icons.CATEGORY_COLOR[c]),
+                            "labelLight": icons.CATEGORY_LABEL_LIGHT.get(c, icons.CATEGORY_COLOR[c]), "count": n})
         return out
 
     @Property("QVariantMap", notify=countsChanged)
@@ -356,7 +389,8 @@ class Backend(QObject):
 
     @Property("QVariantList", constant=True)
     def deviceTypes(self) -> list:
-        return [{"key": k, "label": v[0], "category": v[1], "icon": f"device_{k}", "color": icons.color(k)}
+        return [{"key": k, "label": v[0], "category": v[1], "icon": f"device_{k}", "color": icons.color(k),
+                 "labelDark": icons.label_colors(k)[0], "labelLight": icons.label_colors(k)[1]}
                 for k, v in sorted(devtypes.TYPES.items(), key=lambda kv: (CATEGORIES.index(kv[1][1]), kv[1][0]))
                 if k != "unknown"]
 
@@ -569,6 +603,7 @@ class Backend(QObject):
             auto = f"You set this. Auto-detected: {user['auto_type_label']} ({int(user['auto_confidence'] * 100)}%)"
         return {"sid": snap["sid"], "name": snap["name"], "typeKey": typ, "typeLabel": snap["type_label"],
                 "category": snap.get("category", "Other"), "color": icons.color(typ), "iconName": f"device_{typ}",
+                "labelDark": icons.label_colors(typ)[0], "labelLight": icons.label_colors(typ)[1],
                 "confidence": 0.0 if offline else float(snap["confidence"]), "offline": offline,
                 "status": "offline" if offline else (h.get("status") or ""), "ip": snap["ip"],
                 "mac": snap.get("mac") or "", "webUrl": snap.get("web_url") or "",

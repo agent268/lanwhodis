@@ -17,9 +17,26 @@ Rectangle {
     activeFocusOnTab: true
     color: selected ? Theme.alpha(Theme.accent, 0.20)
          : mouse.containsMouse ? Theme.alpha(Theme.text, 0.08) : "transparent"
-    Behavior on color { ColorAnimation { duration: 90 } }
+    Behavior on color { ColorAnimation { duration: Theme.dur(90) } }
+    Accessible.role: Accessible.Button
+    Accessible.name: item.label + (item.count >= 0 ? ", " + item.count : "")
+    Accessible.checkable: true
+    Accessible.checked: item.selected
+    Accessible.onPressAction: item.clicked()
     Keys.onReturnPressed: item.clicked()
     Keys.onSpacePressed: item.clicked()
+
+
+    // keyboard focus: a clear 2 px ring just outside the control (only Tab can focus these, so no ring after a click)
+    Rectangle {
+        visible: parent.activeFocus
+        anchors.fill: parent
+        anchors.margins: -3
+        radius: parent.radius + 3
+        color: "transparent"
+        border.width: 2
+        border.color: Theme.accent
+    }
 
     Rectangle {                       // selection marker
         visible: item.selected

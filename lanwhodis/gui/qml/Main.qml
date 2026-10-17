@@ -17,6 +17,7 @@ ApplicationWindow {
 
     Binding { target: Theme; property: "mode"; value: backend.theme }
     Binding { target: Theme; property: "zoom"; value: backend.zoom }
+    Binding { target: Theme; property: "reduceMotion"; value: backend.reduceMotion }
 
     readonly property bool compactSide: width < 1120
     readonly property bool narrow: width < 1000
@@ -60,6 +61,8 @@ ApplicationWindow {
                 // network picker
                 Rectangle {
                     id: netPill
+                    Accessible.role: Accessible.ComboBox
+                    Accessible.name: "Network to scan: " + (backend.interfaceLabels.length ? backend.interfaceLabels[backend.interfaceIndex] : "none")
                     Layout.leftMargin: Theme.unit * 0.6
                     Layout.maximumWidth: Theme.unit * 17
                     implicitHeight: Theme.unit * 2.1
@@ -159,12 +162,12 @@ ApplicationWindow {
                 height: parent.height
                 color: Theme.accent
                 width: Math.max(parent.width * backend.progress, parent.width * 0.06)
-                Behavior on width { NumberAnimation { duration: 300 } }
+                Behavior on width { NumberAnimation { duration: Theme.dur(300) } }
                 SequentialAnimation on opacity {
-                    running: backend.scanning
+                    running: backend.scanning && !Theme.reduceMotion
                     loops: Animation.Infinite
-                    NumberAnimation { from: 1.0; to: 0.45; duration: 700 }
-                    NumberAnimation { from: 0.45; to: 1.0; duration: 700 }
+                    NumberAnimation { from: 1.0; to: 0.45; duration: Theme.dur(700) }
+                    NumberAnimation { from: 0.45; to: 1.0; duration: Theme.dur(700) }
                 }
             }
         }
@@ -212,7 +215,7 @@ ApplicationWindow {
                                 compact: win.compactSide
                                 label: modelData.label
                                 iconName: modelData.icon
-                                iconColor: modelData.color !== "" ? modelData.color : Theme.textDim
+                                iconColor: modelData.color !== "" ? Theme.labelColor(modelData.labelDark, modelData.labelLight) : Theme.textDim
                                 count: modelData.count
                                 selected: backend.category === modelData.key
                                 onClicked: backend.setCategory(modelData.key)
@@ -410,7 +413,7 @@ ApplicationWindow {
         implicitHeight: toastText.implicitHeight + Theme.unit * 1.0
         opacity: 0
         visible: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: 160 } }
+        Behavior on opacity { NumberAnimation { duration: Theme.dur(160) } }
         Text { id: toastText; anchors.centerIn: parent; color: Theme.text; font.pixelSize: Theme.fontSize }
         Timer { id: toastTimer; interval: 2600; onTriggered: toast.opacity = 0 }
     }
