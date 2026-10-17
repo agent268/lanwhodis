@@ -16,7 +16,7 @@ from .. import classify, devtypes, export, icons, scanner
 from ..discovery import net
 from ..model import Device
 
-COLS = ["Device", "IP", "Type", "Vendor", "MAC", "Confidence"]
+COLS = ["Device", "IP", "Type", "OS", "Vendor", "MAC", "Confidence"]
 FILTERS = {
     "json": "JSON (*.json)", "html": "HTML (*.html)", "md": "Markdown (*.md)", "csv": "CSV (*.csv)",
     "xlsx": "Excel (*.xlsx)", "pdf": "PDF (*.pdf)", "txt": "Plain text (*.txt)",
@@ -115,10 +115,10 @@ class MainWindow(QMainWindow):
         hh = self.table.horizontalHeader()
         hh.setStretchLastSection(False)
         hh.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
-        for i, w in enumerate((230, 115, 135, 0, 135, 80)):
+        for i, w in enumerate((220, 110, 130, 150, 0, 130, 80)):
             if w:
                 self.table.setColumnWidth(i, w)
-        hh.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
+        hh.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         self.table.sortByColumn(1, Qt.SortOrder.AscendingOrder)
         self.table.selectionModel().selectionChanged.connect(self.show_selected)
 
@@ -213,10 +213,11 @@ class MainWindow(QMainWindow):
             row = self.rows[ip] = self.model.rowCount()
             self.model.appendRow([QStandardItem() for _ in COLS])
         ip_key = tuple(int(p) for p in ip.split("."))
-        values = [snap["name"], ip, snap["type_label"], snap["vendor"] or "", snap["mac"] or "",
+        values = [snap["name"], ip, snap["type_label"], snap["os"], snap["vendor"] or "", snap["mac"] or "",
                   f"{int(snap['confidence'] * 100)}%"]
         keys = [snap["name"].lower(), ip_key[0] << 24 | ip_key[1] << 16 | ip_key[2] << 8 | ip_key[3],
-                snap["type_label"], (snap["vendor"] or "").lower(), snap["mac"] or "", snap["confidence"]]
+                snap["type_label"], snap["os"].lower(), (snap["vendor"] or "").lower(), snap["mac"] or "",
+                snap["confidence"]]
         for c, (v, k) in enumerate(zip(values, keys)):
             it = self.model.item(row, c)
             it.setText(v)
@@ -254,7 +255,7 @@ class MainWindow(QMainWindow):
         self.head_name.setText(snap["name"])
         self.head_sub.setText(f"{snap['type_label']} · {int(snap['confidence'] * 100)}% confidence")
         e = html.escape
-        rows = [("IP", snap["ip"]), ("MAC", snap["mac"]), ("Vendor", snap["vendor"]), ("Model", snap["model"]),
+        rows = [("IP", snap["ip"]), ("OS", snap["os"] and f'{snap["os"]} ({int(snap["os_confidence"] * 100)}%)'), ("MAC", snap["mac"]), ("Vendor", snap["vendor"]), ("Model", snap["model"]),
                 ("Hostname", snap["hostname"]), ("Open ports", ", ".join(map(str, snap["open_ports"]))),
                 ("Services", ", ".join(s.split(":", 1)[-1] for s in snap["services"]))]
         rows += [(k, v) for k, v in snap["facts"].items()]
@@ -267,7 +268,13 @@ class MainWindow(QMainWindow):
                 seen.add(key)
                 items.append(f"<li><b>{e(x['source'])}</b> → {e(devtypes.label(x['device_type']))} "
                              f"{int(x['weight'] * 100)}% <i>{e(str(x['detail']))}</i></li>")
-        ev = "".join(items[:14])
+        for x in snap["os_evidence"]:
+            key = ("os:" + x["source"], x["device_type"], str(x["detail"]).lower())
+            if key not in seen:
+                seen.add(key)
+                items.append(f"<li><b>os/{e(x['source'])}</b> → {e(x['device_type'])} "
+                             f"{int(x['weight'] * 100)}% <i>{e(str(x['detail']))}</i></li>")
+        ev = "".join(items[:20])
         self.detail.setHtml(f"<table cellpadding=3>{body}</table><h4>Why this type?</h4><ul>{ev}</ul>")
 
     # --- export ---------------------------------------------------------------------------

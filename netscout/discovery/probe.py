@@ -11,7 +11,9 @@ from concurrent.futures import ThreadPoolExecutor
 
 from ..classify import _PORT
 from ..model import Device
-from .base import ScanContext
+import sys
+
+from .base import ScanContext, run_cmd
 
 PROBE_PORTS = sorted(set(_PORT) | {80, 443, 8080, 8443})
 HTTP_PORTS = (80, 8080, 443, 8443, 5000, 8000)
@@ -130,6 +132,18 @@ def _banners(d: Device) -> None:
                 pass
 
 
+_TTL = re.compile(r"ttl[=:]\s*(\d+)", re.I)
+
+
+def _ttl(d: Device) -> None:
+    """One ICMP echo via the system ping (no raw sockets); TTL hints at the OS family."""
+    args = (["ping", "-n", "1", "-w", "1000", d.ip] if sys.platform == "win32"
+            else ["ping", "-c", "1", "-W", "1", d.ip])
+    m = _TTL.search(run_cmd(args, timeout=4))
+    if m:
+        d.facts["ttl"] = m.group(1)
+
+
 def _rdns(d: Device) -> None:
     try:
         host = socket.gethostbyaddr(d.ip)[0]
@@ -147,6 +161,7 @@ def enrich(ctx: ScanContext, devices: list[Device]) -> None:
         if ctx.stop.is_set():
             return
         _rdns(d)
+        _ttl(d)
         _banners(d)
         ctx.table.touch(d)
 

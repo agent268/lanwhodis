@@ -22,6 +22,8 @@ def _parser() -> argparse.ArgumentParser:
                    help="format for stdout, or to force for -o files with unknown extensions")
     p.add_argument("-i", "--interface", metavar="NAME|IP",
                    help="scan only this interface (name or address substring); default: all")
+    p.add_argument("--include-virtual", action="store_true",
+                   help="also scan Hyper-V/WSL/Docker/VPN adapters (hidden by default)")
     p.add_argument("--list-interfaces", action="store_true", help="show scannable interfaces and exit")
     p.add_argument("--no-ports", action="store_true", help="skip TCP port probing (faster, quieter)")
     p.add_argument("-t", "--timeout", type=float, default=4.0,
@@ -35,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
     for s in (sys.stdout, sys.stderr):
         s.reconfigure(encoding="utf-8", errors="replace")
     args = _parser().parse_args(argv)
-    ifaces = net.list_interfaces()
+    ifaces = net.list_interfaces(args.include_virtual)
 
     if args.list_interfaces:
         for i in ifaces:

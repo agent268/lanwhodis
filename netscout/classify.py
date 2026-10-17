@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-from . import devtypes
+from . import devtypes, osdetect
 from .model import Device, Evidence
 
 SPECIFIC_THRESHOLD = 0.45   # a non-generic type at/above this beats any generic type
@@ -200,7 +200,7 @@ _PORT: dict[int, Votes] = {
     8060: {"streaming": .9},
     8096: {"media_server": .85}, 8200: {"media_server": .6}, 32400: {"media_server": .9},
     8123: {"hub": .7},
-    8291: {"router": .9}, 8728: {"router": .85},
+    8291: {"router": .3}, 8728: {"router": .85},
     9999: {"smart_plug": .4, "iot": .2},
     37777: {"camera": .9}, 34567: {"camera": .8}, 55443: {"light": .7},
     62078: {"phone": .85, "tablet": .15},
@@ -226,6 +226,11 @@ _NAME: list[tuple[str, Votes]] = [
     (r"chromecast", {"streaming": .95}),
     (r"^desktop-|^pc-|-pc$|^win-|^workstation", {"computer": .6}),
     (r"laptop|notebook|thinkpad|latitude|\bxps\b|surface|^dell-|^lenovo-", {"laptop": .6}),
+    (r"vivobook|zenbook|expertbook|rog-?(zephyrus|flow|strix)|ideapad|yoga|inspiron|pavilion|spectre|"
+     r"elitebook|probook|envy-?x360|galaxy-?book|aspire|swift-?\d|predator|legion|macbook|chromebook",
+     {"laptop": .8}),
+    # a CPU architecture in a hostname is something people only name general-purpose computers
+    (r"(^|[-_ .])(arm64|aarch64|x64|x86|amd64|win(dows)?-?(arm|11|10))([-_ .0-9]|$)", {"computer": .55}),
     (r"raspberrypi|^pi\d|-pi$|^rpi|^pi-", {"raspberry_pi": .85}),
     (r"steam-?deck", {"handheld_console": .98}),
     (r"xbox", {"game_console": .95}),
@@ -365,6 +370,9 @@ def gather(d: Device) -> list[Evidence]:
             if rx.search(bl):
                 _vote(ev, "text", votes, b[:80])
 
+    osdetect.detect(d)
+    if d.os_hint:
+        _vote(ev, "os", osdetect.type_votes(d), d.os_label)
     if d.is_gateway:
         _vote(ev, "gateway", {"router": .9, "gateway": .3}, "default gateway")
     if d.random_mac:
@@ -391,4 +399,6 @@ def classify(d: Device) -> Device:
 
     if d.confidence < UNKNOWN_BELOW:
         d.device_type = "unknown"
+    if d.os_hint == "iOS" and d.device_type == "tablet":
+        d.os_hint = "iPadOS"        # iOS and iPadOS share every network signal; the device type decides
     return d

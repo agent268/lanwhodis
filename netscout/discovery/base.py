@@ -17,13 +17,16 @@ class Iface:
     ip: str
     network: ipaddress.IPv4Network
     mac: str | None = None
+    full_network: ipaddress.IPv4Network | None = None   # real subnet when we clamped it to a /24
+    extra_hosts: list[str] = field(default_factory=list)   # e.g. a gateway outside the clamped range
 
     @property
     def label(self) -> str:
         return f"{self.name} — {self.ip} ({self.network})"
 
     def hosts(self) -> list[str]:
-        return [str(h) for h in self.network.hosts() if str(h) != self.ip]
+        hosts = [str(h) for h in self.network.hosts() if str(h) != self.ip]
+        return hosts + [h for h in self.extra_hosts if h not in hosts and h != self.ip]
 
 
 @dataclass
@@ -42,7 +45,7 @@ class ScanContext:
             a = ipaddress.ip_address(ip)
         except ValueError:
             return False
-        return any(a in i.network for i in self.ifaces)
+        return any(a in i.network or ip in i.extra_hosts for i in self.ifaces)
 
 
 def run_cmd(args: list[str], timeout: float = 8.0) -> str:

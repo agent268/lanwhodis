@@ -158,3 +158,143 @@ def test_pdf_magic(devices):
 def test_format_inference():
     assert export.format_for_path("x/Report.XLSX") == "xlsx"
     assert export.format_for_path("noext") is None
+
+
+# --- OS detection ------------------------------------------------------------------------
+from netscout import osdetect
+
+
+def os_of(**kw):
+    d = make()
+    d.text = kw.pop("text", [])
+    d.facts.update(kw.pop("facts", {}))
+    d.open_ports |= set(kw.pop("ports", []))
+    for k, v in kw.items():
+        setattr(d, k, v)
+    osdetect.detect(d)
+    return d
+
+
+def test_os_ssh_banner_ubuntu():
+    d = os_of(text=["SSH-2.0-OpenSSH_9.6p1 Ubuntu-3ubuntu13.5"], facts={"ttl": "64"})
+    assert (d.os_hint, d.os_detail) == ("Linux", "Ubuntu") and d.os_confidence > .85
+
+
+def test_os_windows_from_ttl_ports_and_netbios():
+    d = os_of(ports=[135, 445, 3389], facts={"ttl": "128"})
+    assert d.os_hint == "Windows" and d.os_confidence > .8
+
+
+def test_os_upnp_windows_version():
+    d = os_of(text=["Microsoft-Windows/10.0 UPnP/1.0 UPnP-Device-Host/1.0"])
+    assert d.os_hint == "Windows" and d.os_detail == "NT 10.0"
+
+
+def test_os_ios_from_lockdown_port_and_ttl_hop_decrement():
+    d = os_of(ports=[62078], facts={"ttl": "62"})     # 62 = 64 minus 2 hops
+    assert d.os_hint == "iOS"
+
+
+def test_os_feeds_device_type():
+    d = make()
+    d.text = ["Linux/3.14 UPnP/1.0 MiniUPnPd/1.9"]
+    d.services.add("upnp:internetgatewaydevice")
+    assert classify.classify(d).device_type == "router" and d.os_hint == "Linux"
+    t = make()
+    t.text = ["webOS TV"]
+    assert classify.classify(t).device_type == "tv"
+
+
+def test_os_unknown_without_evidence():
+    assert os_of().os_hint is None
+
+
+def test_os_in_exports(devices):
+    devices[0].text.append("SSH-2.0-OpenSSH_8.4p1 Debian-5")
+    classify.classify(devices[0])
+    assert "Debian" in export.render(devices, "csv")
+
+
+# --- OS-specific command output parsers --------------------------------------------------
+from netscout.discovery import net as netmod
+
+WIN_ARP = """
+Interface: 192.168.1.18 --- 0x12
+  Internet Address      Physical Address      Type
+  192.168.1.1           fc-3f-a6-55-0f-92     dynamic
+  192.168.1.17          82-17-3f-57-9d-9b     dynamic
+  192.168.1.255         ff-ff-ff-ff-ff-ff     static
+  224.0.0.22            01-00-5e-00-00-16     static
+"""
+LINUX_NEIGH = """192.168.1.1 dev eth0 lladdr fc:3f:a6:55:0f:92 REACHABLE
+192.168.1.77 dev eth0  FAILED
+192.168.1.20 dev eth0 lladdr 2c:cf:67:31:57:fc STALE
+"""
+
+
+@pytest.mark.parametrize("platform_name,text,expected", [
+    ("win32", WIN_ARP, {"192.168.1.1": "fc:3f:a6:55:0f:92", "192.168.1.17": "82:17:3f:57:9d:9b"}),
+    ("linux", LINUX_NEIGH, {"192.168.1.1": "fc:3f:a6:55:0f:92", "192.168.1.20": "2c:cf:67:31:57:fc"}),
+])
+def test_read_arp_parses_both_platforms(monkeypatch, platform_name, text, expected):
+    monkeypatch.setattr(netmod.sys, "platform", platform_name)
+    monkeypatch.setattr(netmod, "run_cmd", lambda *a, **k: text)
+    assert netmod.read_arp() == expected
+
+
+def test_default_gateway_parsers(monkeypatch):
+    monkeypatch.setattr(netmod.sys, "platform", "win32")
+    monkeypatch.setattr(netmod, "run_cmd", lambda *a, **k:
+                        "  0.0.0.0          0.0.0.0      192.168.1.1     192.168.1.18     25\n")
+    assert netmod.default_gateways() == {"192.168.1.1"}
+    monkeypatch.setattr(netmod.sys, "platform", "linux")
+    monkeypatch.setattr(netmod, "run_cmd", lambda *a, **k: "default via 10.0.0.1 dev wlan0 proto dhcp\n")
+    assert netmod.default_gateways() == {"10.0.0.1"}
+
+
+def test_local_os_is_authoritative():
+    d = make()
+    d.text = ["local-os: linux | steamos holo"]
+    osdetect.detect(d)
+    assert (d.os_hint, d.os_detail) == ("Linux", "SteamOS") and d.os_confidence > .98
+
+
+def test_clamped_subnet_keeps_gateway_probeable():
+    import ipaddress
+    from netscout.discovery.base import Iface
+    i = Iface("eth0", "172.19.233.225", ipaddress.ip_network("172.19.233.0/24"),
+              full_network=ipaddress.ip_network("172.19.224.0/20"), extra_hosts=["172.19.224.1"])
+    assert "172.19.224.1" in i.hosts()
+
+
+def test_arm64_windows_hostname_is_computer():
+    # regression: Windows-on-ARM laptop whose only signals were a hostname and TTL 128
+    d = make(hostname="Alex-Arm64")
+    d.facts["ttl"] = "128"
+    classify.classify(d)
+    assert d.device_type == "computer" and d.os_hint == "Windows" and d.confidence >= .5
+
+
+def test_ttl_alone_nudges_toward_computer_but_does_not_decide():
+    d = make()
+    d.facts["ttl"] = "128"
+    classify.classify(d)
+    assert d.os_detail == "TTL guess" and d.device_type in ("computer", "unknown")
+
+
+def test_laptop_model_family_in_name():
+    assert classify.classify(make(hostname="ASUS-Vivobook-S15")).device_type == "laptop"
+
+
+def test_weak_vendor_only_os_hint_is_hidden():
+    d = make()
+    d.vendor = "Microsoft Corporation"
+    osdetect.detect(d)
+    assert d.os_hint is None
+
+
+def test_local_os_detail_keeps_case():
+    d = make()
+    d.text = ["local-os: linux | Ubuntu 26.04 LTS (WSL)"]
+    osdetect.detect(d)
+    assert d.os_detail == "Ubuntu 26.04 LTS (WSL)"

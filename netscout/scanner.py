@@ -1,6 +1,7 @@
 """Scan orchestration. Used by both the CLI and the GUI; has no UI dependencies."""
 from __future__ import annotations
 
+import ipaddress
 import threading
 from typing import Callable
 
@@ -25,7 +26,12 @@ def scan(
     if not ifaces:
         raise RuntimeError("no usable IPv4 network interface found")
     table = DeviceTable(on_update=on_update)
-    ctx = ScanContext(table=table, ifaces=ifaces, gateways=net.default_gateways(),
+    gateways = net.default_gateways()
+    for i in ifaces:   # a big subnet is clamped to a /24; still probe the gateway if it lies outside it
+        if i.full_network:
+            i.extra_hosts = [g for g in gateways if ipaddress.ip_address(g) in i.full_network
+                             and ipaddress.ip_address(g) not in i.network]
+    ctx = ScanContext(table=table, ifaces=ifaces, gateways=gateways,
                       stop=stop or threading.Event(), log=log, progress=progress,
                       timeout=timeout, port_scan=port_scan)
 

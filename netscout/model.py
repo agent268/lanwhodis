@@ -31,7 +31,10 @@ class Device:
     hostname: str | None = None
     names: dict[str, str] = field(default_factory=dict)       # source -> name
     model: str | None = None
-    os_hint: str | None = None
+    os_hint: str | None = None          # family: Windows, macOS, iOS, Linux, Roku OS ...
+    os_detail: str | None = None        # e.g. Ubuntu, kernel 3.14, NT 10.0
+    os_confidence: float = 0.0
+    os_evidence: list[Evidence] = field(default_factory=list)
     open_ports: set[int] = field(default_factory=set)
     services: set[str] = field(default_factory=set)           # e.g. "_airplay._tcp", "upnp:MediaRenderer"
     facts: dict[str, str] = field(default_factory=dict)       # misc key/values for details view
@@ -50,6 +53,12 @@ class Device:
         return (readable[0] if readable else None) or self.model or self.vendor or self.hostname or self.ip
 
     @property
+    def os_label(self) -> str:
+        if not self.os_hint:
+            return ""
+        return f"{self.os_hint} ({self.os_detail})" if self.os_detail else self.os_hint
+
+    @property
     def type_label(self) -> str:
         return devtypes.label(self.device_type)
 
@@ -65,7 +74,11 @@ class Device:
             "type_label": self.type_label,
             "category": devtypes.category(self.device_type),
             "confidence": round(self.confidence, 2),
-            "os_hint": self.os_hint,
+            "os": self.os_label,
+            "os_family": self.os_hint,
+            "os_detail": self.os_detail,
+            "os_confidence": round(self.os_confidence, 2),
+            "os_evidence": [vars(e) for e in sorted(self.os_evidence, key=lambda e: -e.weight)],
             "is_gateway": self.is_gateway,
             "random_mac": self.random_mac,
             "open_ports": sorted(self.open_ports),

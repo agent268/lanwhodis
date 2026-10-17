@@ -12,13 +12,19 @@ from .base import Iface, run_cmd
 
 MAX_PREFIX_SPAN = 22   # never sweep anything bigger than a /22 (1022 hosts)
 
+# Host-only / tunnel adapters are not "the LAN": scanning them just finds this machine's own bridge.
+_VIRTUAL = re.compile(r"vethernet|wsl|hyper-v|docker|^veth|virbr|^br-|vmnet|vboxnet|tailscale|zerotier|"
+                      r"^tun\d|^tap\d|loopback|^lo$|bluetooth", re.I)
 
-def list_interfaces() -> list[Iface]:
+
+def list_interfaces(include_virtual: bool = False) -> list[Iface]:
     out: list[Iface] = []
     stats = psutil.net_if_stats()
     for name, addrs in psutil.net_if_addrs().items():
         st = stats.get(name)
         if st is not None and not st.isup:
+            continue
+        if not include_virtual and _VIRTUAL.search(name):
             continue
         mac = next((a.address for a in addrs if a.family == psutil.AF_LINK), None)
         for a in addrs:
@@ -27,12 +33,13 @@ def list_interfaces() -> list[Iface]:
             ip = ipaddress.ip_address(a.address)
             if ip.is_loopback or ip.is_link_local:
                 continue
-            net = ipaddress.ip_network(f"{a.address}/{a.netmask}", strict=False)
+            net = full = ipaddress.ip_network(f"{a.address}/{a.netmask}", strict=False)
             if net.prefixlen < MAX_PREFIX_SPAN:
                 net = ipaddress.ip_network(f"{a.address}/24", strict=False)
             if net.prefixlen >= 31:
                 continue
-            out.append(Iface(name=name, ip=a.address, network=net, mac=oui.normalize_mac(mac or "")))
+            out.append(Iface(name=name, ip=a.address, network=net, mac=oui.normalize_mac(mac or ""),
+                             full_network=full if full != net else None))
     return out
 
 
@@ -61,7 +68,8 @@ def default_gateways() -> set[str]:
     return gws
 
 
-_ARP_LINE = re.compile(r"(\d+\.\d+\.\d+\.\d+)\D+?((?:[0-9a-fA-F]{2}[-:]){5}[0-9a-fA-F]{2})")
+# Linux puts "dev eth0 lladdr" between IP and MAC, so the gap must allow digits.
+_ARP_LINE = re.compile(r"(\d+\.\d+\.\d+\.\d+)\s.*?((?:[0-9a-fA-F]{2}[-:]){5}[0-9a-fA-F]{2})(?![0-9a-fA-F:-])")
 
 
 def read_arp() -> dict[str, str]:

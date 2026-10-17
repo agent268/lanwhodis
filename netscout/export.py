@@ -18,7 +18,7 @@ BINARY = {"xlsx", "pdf"}
 EXT_TO_FORMAT = {".json": "json", ".html": "html", ".htm": "html", ".md": "md", ".markdown": "md",
                  ".csv": "csv", ".xlsx": "xlsx", ".pdf": "pdf", ".txt": "txt"}
 
-COLUMNS = [("IP", "ip"), ("Name", "name"), ("Type", "type_label"), ("Vendor", "vendor"), ("MAC", "mac"),
+COLUMNS = [("IP", "ip"), ("Name", "name"), ("Type", "type_label"), ("OS", "os"), ("Vendor", "vendor"), ("MAC", "mac"),
            ("Model", "model"), ("Confidence", "conf"), ("Open ports", "ports"), ("Services", "services")]
 
 
@@ -33,7 +33,7 @@ def _rows(devices: Iterable[Device]) -> list[dict]:
         x["conf"] = f"{int(round(d.confidence * 100))}%"
         x["ports"] = ", ".join(map(str, x["open_ports"]))
         x["services"] = ", ".join(s.split(":", 1)[-1] for s in x["services"] if not s.startswith("local:"))
-        for k in ("vendor", "mac", "model"):
+        for k in ("vendor", "mac", "model", "os"):
             x[k] = x[k] or ""
         rows.append(x)
     return rows
@@ -77,8 +77,8 @@ def _md(rows, meta) -> str:
 
 
 def _txt(rows, meta) -> str:
-    cols = [("IP", "ip", 15), ("Name", "name", 26), ("Type", "type_label", 18), ("Vendor", "vendor", 26),
-            ("MAC", "mac", 17), ("Conf", "conf", 5)]
+    cols = [("IP", "ip", 15), ("Name", "name", 24), ("Type", "type_label", 17), ("OS", "os", 22),
+            ("Vendor", "vendor", 22), ("MAC", "mac", 17), ("Conf", "conf", 5)]
     fmt = lambda vals: "  ".join(str(v)[:w].ljust(w) for v, (_, _, w) in zip(vals, cols)).rstrip()
     out = [f"Network scan — {meta['host']} — {meta['generated']} — {meta['count']} devices", "",
            fmt([c for c, _, _ in cols]), fmt(["-" * w for _, _, w in cols])]
@@ -98,7 +98,7 @@ def _html(rows, meta) -> str:
             f'<td class="ic">{icons.svg(r["type"], 32)}</td>'
             f'<td><b>{e(r["name"])}</b><br><small>{e(r["ip"])}</small></td>'
             f'<td>{e(r["type_label"])}<br><small>{e(r["conf"])}</small></td>'
-            f'<td>{e(r["vendor"])}<br><small>{e(r["mac"])}</small></td>'
+            f'<td>{e(r["os"])}</td><td>{e(r["vendor"])}<br><small>{e(r["mac"])}</small></td>'
             f'<td>{e(r["model"])}</td><td><small>{e(r["ports"])}</small></td>'
             f'<td><details><summary>{len(r["evidence"])} signals</summary><ul>{ev}</ul></details></td></tr>')
     return f"""<!doctype html>
@@ -119,7 +119,7 @@ small,summary,li span{{color:var(--mut)}} td.ic{{width:40px}} ul{{margin:.4rem 0
 <h1>Network scan</h1>
 <div class="sub">{e(meta['host'])} · {e(meta['generated'])} · {meta['count']} devices{(' · ' + e(meta['networks'])) if meta.get('networks') else ''}</div>
 <input id="q" placeholder="Filter devices…" oninput="for(const r of document.querySelectorAll('tbody tr'))r.hidden=!r.dataset.q.includes(this.value.toLowerCase())">
-<div class="wrap"><table><thead><tr><th></th><th>Device</th><th>Type</th><th>Vendor / MAC</th><th>Model</th><th>Ports</th><th>Evidence</th></tr></thead>
+<div class="wrap"><table><thead><tr><th></th><th>Device</th><th>Type</th><th>OS</th><th>Vendor / MAC</th><th>Model</th><th>Ports</th><th>Evidence</th></tr></thead>
 <tbody>{''.join(cards)}</tbody></table></div></main></body></html>
 """
 
@@ -179,12 +179,12 @@ def _pdf(rows, meta) -> bytes:
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=landscape(letter), leftMargin=.5 * inch, rightMargin=.5 * inch,
                             topMargin=.5 * inch, bottomMargin=.5 * inch, title="Network scan")
-    cols = [("IP", "ip"), ("Name", "name"), ("Type", "type_label"), ("Vendor", "vendor"), ("MAC", "mac"),
+    cols = [("IP", "ip"), ("Name", "name"), ("Type", "type_label"), ("OS", "os"), ("Vendor", "vendor"), ("MAC", "mac"),
             ("Model", "model"), ("Conf", "conf"), ("Ports", "ports")]
     data = [[Paragraph(f"<b>{h}</b>", cell) for h, _ in cols]]
     for r in rows:
         data.append([Paragraph(html.escape(str(r[k])), cell) for _, k in cols])
-    widths = [.95, 1.7, 1.2, 1.7, 1.15, 1.3, .45, 1.55]
+    widths = [.9, 1.45, 1.0, 1.25, 1.35, 1.1, 1.0, .4, .55]
     t = Table(data, colWidths=[w * inch for w in widths], repeatRows=1)
     t.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#DCE6F5")),

@@ -6,8 +6,10 @@ Windows/Samba machines. No raw sockets or elevation needed.
 """
 from __future__ import annotations
 
+import platform
 import socket
 import struct
+import sys
 import time
 
 from .base import ScanContext
@@ -45,6 +47,22 @@ def _parse_nbstat(data: bytes) -> tuple[dict[str, str], str | None]:
         if mac == "00:00:00:00:00:00":
             mac = None
     return names, mac
+
+
+def local_os_text() -> str:
+    """Exact OS of this machine, in the form osdetect's 'local-os:' rules expect."""
+    system = platform.system().lower()
+    pretty = ""
+    if system == "linux":
+        try:
+            with open("/etc/os-release") as f:
+                kv = dict(l.rstrip().split("=", 1) for l in f if "=" in l)
+            pretty = kv.get("PRETTY_NAME", "").strip('"')
+            if "microsoft" in platform.release().lower():
+                pretty += " (WSL)"
+        except OSError:
+            pass
+    return f"local-os: {system} | {pretty}"
 
 
 def run(ctx: ScanContext) -> None:
@@ -100,5 +118,6 @@ def run(ctx: ScanContext) -> None:
         d = ctx.table.get(iface.ip, iface.mac)
         d.names.setdefault("local", socket.gethostname())
         d.facts["note"] = "this machine"
+        d.text.append(local_os_text())
         d.services.add("local:self")
     ctx.progress("sweep", 1.0)
