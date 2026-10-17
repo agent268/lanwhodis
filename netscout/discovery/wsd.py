@@ -6,6 +6,9 @@ import socket
 import time
 import uuid
 
+from urllib.parse import unquote
+
+from ..model import Device, ServiceRecord
 from .base import ScanContext
 
 _PROBE = """<?xml version="1.0" encoding="utf-8"?>
@@ -19,6 +22,43 @@ _PROBE = """<?xml version="1.0" encoding="utf-8"?>
 
 _TYPES = re.compile(r"<(?:\w+:)?Types[^>]*>([^<]*)</(?:\w+:)?Types>")
 _XADDR = re.compile(r"<(?:\w+:)?XAddrs[^>]*>([^<]*)</(?:\w+:)?XAddrs>")
+
+
+_SCOPES = re.compile(r"<(?:\w+:)?Scopes[^>]*>([^<]*)</(?:\w+:)?Scopes>")
+_EPR = re.compile(r"<(?:\w+:)?EndpointReference[^>]*>\s*<(?:\w+:)?Address[^>]*>([^<]*)<")
+
+
+def parse_probe_match(d: Device, text: str) -> None:
+    """Record what a WS-Discovery ProbeMatch says about a device (types, XAddrs, ONVIF scopes).
+    XAddrs are SOAP service endpoints: we list them, we never call them."""
+    types = [t.split(":")[-1].lower() for m in _TYPES.finditer(text) for t in m.group(1).split()]
+    own = [u for u in (d.own_url(x) for m in _XADDR.finditer(text) for x in m.group(1).split()) if u]
+    scopes = [s for m in _SCOPES.finditer(text) for s in m.group(1).split()]
+    epr = _EPR.search(text)
+    details: dict[str, str] = {}
+    if own:
+        details["xaddrs"] = " ".join(own)
+        d.facts.setdefault("wsd_xaddrs", details["xaddrs"][:200])
+    if scopes:
+        details["scopes"] = " ".join(scopes)[:500]
+    if epr:
+        details["address"] = epr.group(1).strip()[:100]
+    d.services.add("wsd:device")
+    for short in dict.fromkeys(types or ["device"]):
+        d.services.add(f"wsd:{short}")
+        if short not in d.facts.get("wsd_types", ""):
+            d.facts["wsd_types"] = (d.facts.get("wsd_types", "") + " " + short).strip()
+        d.add_service(ServiceRecord("wsd", short, url=own[0] if own else None, soap=bool(own),
+                                    details=dict(details)))
+    for s in scopes:      # ONVIF cameras put their name and hardware model in the scopes
+        for part, attr in (("/name/", "name"), ("/hardware/", "hardware")):
+            if part in s:
+                val = unquote(s.split(part, 1)[1]).strip()
+                if val and attr == "name":
+                    d.names.setdefault("onvif", val)
+                elif val:
+                    d.model = d.model or val
+                    d.text.append(val)
 
 
 def run(ctx: ScanContext) -> None:
@@ -41,18 +81,8 @@ def run(ctx: ScanContext) -> None:
                     continue
                 if not ctx.in_scope(ip):
                     continue
-                text = data.decode("utf-8", "replace")
                 d = ctx.table.get(ip)
-                d.services.add("wsd:device")
-                for m in _TYPES.finditer(text):
-                    for t in m.group(1).split():
-                        short = t.split(":")[-1].lower()
-                        d.services.add(f"wsd:{short}")
-                        d.facts.setdefault("wsd_types", "")
-                        if short not in d.facts["wsd_types"]:
-                            d.facts["wsd_types"] += (" " if d.facts["wsd_types"] else "") + short
-                for m in _XADDR.finditer(text):
-                    d.facts.setdefault("wsd_xaddrs", m.group(1).strip()[:200])
+                parse_probe_match(d, data.decode("utf-8", "replace"))
                 ctx.table.touch(d)
         finally:
             sock.close()

@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from zeroconf import ServiceBrowser, ServiceStateChange, Zeroconf, ZeroconfServiceTypes
 
+from ..model import ServiceRecord
 from .base import ScanContext
 
 _META = "_services._dns-sd._udp.local."
@@ -52,6 +53,8 @@ def run(ctx: ScanContext) -> None:
                 d.services.add(f"mdns:{short}")
                 inst = name[: -len(stype) - 1] if name.endswith("." + stype) else name
                 d.names.setdefault("mdns", inst)
+                d.add_service(ServiceRecord("mdns", short, name=inst, port=info.port or None,
+                                            details={k: v[:120] for k, v in list(props.items())[:24]}))
                 if info.server:
                     host = info.server.rstrip(".")
                     d.facts.setdefault("mdns_host", host)

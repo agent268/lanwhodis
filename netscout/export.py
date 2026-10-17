@@ -61,6 +61,45 @@ def _csv(rows, meta) -> str:
     return buf.getvalue()
 
 
+PROTOCOL_ORDER = ("mdns", "upnp", "ssdp", "wsd", "netbios", "tcp")
+PROTOCOL_LABEL = {"mdns": "mDNS / Bonjour", "upnp": "UPnP", "ssdp": "SSDP", "wsd": "WS-Discovery",
+                  "netbios": "NetBIOS", "tcp": "Open TCP ports"}
+
+
+def grouped_services(r: dict) -> list[tuple[str, list[dict]]]:
+    """Advertised services of one device row, grouped by protocol in a stable, readable order."""
+    out = []
+    for proto in PROTOCOL_ORDER:
+        items = [s for s in r["advertised"] if s["protocol"] == proto]
+        if items:
+            out.append((PROTOCOL_LABEL[proto], items))
+    return out
+
+
+def service_line(s: dict) -> str:
+    bits = [s["label"]]
+    if s["name"]:
+        bits.append(f'"{s["name"]}"')
+    if s["port"] and s["protocol"] != "tcp":
+        bits.append(f':{s["port"]}')
+    if s["url"]:
+        bits.append(s["url"] + (" [SOAP]" if s["soap"] else ""))
+    return " ".join(bits)
+
+
+def _service_blocks(rows, md: bool) -> list[str]:
+    out = []
+    for r in rows:
+        groups = grouped_services(r)
+        if not groups:
+            continue
+        out += ["", f"## {r['ip']} - {r['name']}" if md else f"{r['ip']}  {r['name']}  ({r['type_label']})"]
+        for label, items in groups:
+            out.append(f"**{label}**" if md else f"  {label}")
+            out += [(f"- {service_line(s)}" if md else f"    {service_line(s)}") for s in items]
+    return out
+
+
 def _md_cell(s) -> str:
     return str(s).replace("|", "\\|").replace("\n", " ")
 
@@ -73,6 +112,8 @@ def _md(rows, meta) -> str:
            "|" + "|".join("---" for _ in COLUMNS) + "|"]
     for r in rows:
         out.append("| " + " | ".join(_md_cell(r[k]) for _, k in COLUMNS) + " |")
+    if meta.get("with_services"):
+        out += _service_blocks(rows, md=True)
     return "\n".join(out) + "\n"
 
 
@@ -83,6 +124,8 @@ def _txt(rows, meta) -> str:
     out = [f"Network scan — {meta['host']} — {meta['generated']} — {meta['count']} devices", "",
            fmt([c for c, _, _ in cols]), fmt(["-" * w for _, _, w in cols])]
     out += [fmt([r[k] for _, k, _ in cols]) for r in rows]
+    if meta.get("with_services"):
+        out += _service_blocks(rows, md=False)
     return "\n".join(out) + "\n"
 
 
@@ -93,6 +136,8 @@ def _html(rows, meta) -> str:
         ev = "".join(f"<li><b>{e(x['source'])}</b> → {e(x['device_type'])} "
                      f"({int(x['weight'] * 100)}%) <span>{e(str(x['detail']))}</span></li>"
                      for x in r["evidence"][:8])
+        sv = "".join(f"<li><b>{e(label)}</b><ul>" + "".join(f"<li>{e(service_line(s))}</li>" for s in items)
+                     + "</ul></li>" for label, items in grouped_services(r))
         cards.append(
             f'<tr data-q="{e((r["ip"] + r["name"] + r["type_label"] + r["vendor"] + r["mac"]).lower())}">'
             f'<td class="ic">{icons.svg(r["type"], 32)}</td>'
@@ -102,7 +147,9 @@ def _html(rows, meta) -> str:
             f'<td>{e(r["model"])}'
             + (f'<br><a href="{e(r["web_url"])}" target="_blank" rel="noopener">Web UI</a>' if r["web_url"] else "")
             + f'</td><td><small>{e(r["ports"])}</small></td>'
-            f'<td><details><summary>{len(r["evidence"])} signals</summary><ul>{ev}</ul></details></td></tr>')
+            f'<td><details><summary>{len(r["evidence"])} signals</summary><ul>{ev}</ul></details>'
+            + (f'<details><summary>{len(r["advertised"])} services</summary><ul>{sv}</ul></details>' if sv else "")
+            + '</td></tr>')
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Network scan — {e(meta['host'])}</title>
@@ -160,6 +207,18 @@ def _xlsx(rows, meta, devices) -> bytes:
         c.font, c.fill = Font(bold=True, color="FFFFFF"), head
     ev.freeze_panes = "A2"
     ev.auto_filter.ref = ev.dimensions
+
+    sv = wb.create_sheet("Services")
+    sv.append(["IP", "Device", "Protocol", "Service", "Name / instance", "Port", "Endpoint", "SOAP", "Details"])
+    for r in rows:
+        for label, items in grouped_services(r):
+            for s in items:
+                sv.append([r["ip"], r["name"], label, s["label"], s["name"], s["port"], s["url"] or "",
+                           "yes" if s["soap"] else "", "; ".join(f"{k}={v}" for k, v in s["details"].items())[:500]])
+    for c in sv[1]:
+        c.font, c.fill = Font(bold=True, color="FFFFFF"), head
+    sv.freeze_panes = "A2"
+    sv.auto_filter.ref = sv.dimensions
 
     info = wb.create_sheet("Scan")
     for k, v in meta.items():

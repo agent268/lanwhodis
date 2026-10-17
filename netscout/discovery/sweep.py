@@ -12,6 +12,7 @@ import struct
 import sys
 import time
 
+from ..model import ServiceRecord
 from .base import ScanContext
 from .net import read_arp
 
@@ -100,6 +101,8 @@ def run(ctx: ScanContext) -> None:
                     if "workstation" in names:
                         d.names.setdefault("netbios", names["workstation"])
                     d.services.add("netbios:nbstat")
+                    for kind, val in names.items():
+                        d.add_service(ServiceRecord("netbios", kind, name=val))
                     d.text.append("windows")  # NBSTAT responders are overwhelmingly Windows/Samba
                     ctx.table.touch(d)
         finally:

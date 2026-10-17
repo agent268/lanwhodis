@@ -369,3 +369,66 @@ def test_empty_404_is_not_a_web_ui_but_a_real_page_is(monkeypatch):
     monkeypatch.setattr(probe, "_http_get", lambda *a, **k: ("200", {}, "<html><title>Router</title></html>"))
     probe._banners(d)
     assert d.web_url == "https://192.168.1.123:8443/"
+
+
+# --- advertised services -----------------------------------------------------------------
+from netscout.discovery.wsd import parse_probe_match
+from netscout.model import ServiceRecord
+
+ONVIF_MATCH = """<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"
+ xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery">
+<s:Body><d:ProbeMatches><d:ProbeMatch>
+<a:EndpointReference><a:Address>urn:uuid:11111111-2222-3333-4444-555555555555</a:Address></a:EndpointReference>
+<d:Types>dn:NetworkVideoTransmitter tds:Device</d:Types>
+<d:Scopes>onvif://www.onvif.org/name/Porch%20Cam onvif://www.onvif.org/hardware/IPC-B2 onvif://www.onvif.org/type/video_encoder</d:Scopes>
+<d:XAddrs>http://192.168.1.60:80/onvif/device_service http://evil.example.com/x</d:XAddrs>
+</d:ProbeMatch></d:ProbeMatches></s:Body></s:Envelope>"""
+
+
+def test_wsd_probe_match_records_onvif_camera_and_drops_foreign_xaddr():
+    d = make("192.168.1.60")
+    parse_probe_match(d, ONVIF_MATCH)
+    kinds = {r.kind for r in d.advertised}
+    assert {"networkvideotransmitter", "device"} <= kinds
+    cam = next(r for r in d.advertised if r.kind == "networkvideotransmitter")
+    assert cam.url == "http://192.168.1.60:80/onvif/device_service" and cam.soap
+    assert "evil.example.com" not in cam.details["xaddrs"]
+    assert "video_encoder" in cam.details["scopes"] and cam.details["address"].startswith("urn:uuid:")
+    assert d.names["onvif"] == "Porch Cam" and d.model == "IPC-B2"
+    assert classify.classify(d).device_type == "camera"
+
+
+def test_add_service_dedupes_merges_details_and_drops_offdevice_urls():
+    d = make("192.168.1.9")
+    d.add_service(ServiceRecord("upnp", "avtransport", name="urn:upnp-org:serviceId:AVTransport",
+                                url="http://192.168.1.9:49152/ctl", soap=True, details={"a": "1"}))
+    d.add_service(ServiceRecord("upnp", "avtransport", name="urn:upnp-org:serviceId:AVTransport",
+                                url="http://192.168.1.9:49152/ctl", soap=True, details={"b": "2"}))
+    d.add_service(ServiceRecord("upnp", "evil", url="http://203.0.113.5/ctl", soap=True))
+    assert len(d.advertised) == 2
+    assert d.advertised[0].details == {"a": "1", "b": "2"}
+    assert d.advertised[1].url is None           # foreign endpoint dropped, record kept without it
+
+
+def test_catalog_friendly_names_and_fallbacks():
+    from netscout import catalog
+    assert catalog.friendly("mdns", "_ipp._tcp") == "Internet Printing (IPP)"
+    assert catalog.friendly("tcp", "445") == "SMB"
+    assert catalog.friendly("ssdp", "urn:schemas-upnp-org:service:AVTransport:1") == "AV transport"
+    assert catalog.friendly("ssdp", "urn:roku-com:device:player:1-0") == "player"
+    assert catalog.friendly("mdns", "_weird-thing._tcp") == "Weird thing"
+
+
+def test_services_in_exports(devices, tmp_path):
+    devices[0].add_service(ServiceRecord("mdns", "_ipp._tcp", name="Office Printer", port=631))
+    devices[0].add_service(ServiceRecord("tcp", "9100", port=9100))
+    assert "Internet Printing (IPP)" in export.render(devices, "html")
+    txt = export.render(devices, "txt", {"with_services": True})
+    assert "mDNS / Bonjour" in txt and '"Office Printer" :631' in txt
+    assert "Open TCP ports" in export.render(devices, "md", {"with_services": True})
+    assert "Open TCP ports" not in export.render(devices, "md")
+    import openpyxl
+    wb = openpyxl.load_workbook(export.write(devices, "xlsx", tmp_path / "s.xlsx"))
+    assert [c.value for c in wb["Services"][1]][:4] == ["IP", "Device", "Protocol", "Service"]
+    assert wb["Services"].max_row >= 3
+    assert json.loads(export.render(devices, "json"))["devices"][0]["advertised"][0]["label"]

@@ -8,7 +8,7 @@ from urllib.parse import urlsplit, urlunsplit
 from dataclasses import dataclass, field
 from typing import Callable
 
-from . import devtypes, oui
+from . import catalog, devtypes, oui
 
 
 # Human-assigned names beat protocol-derived ones; opaque ids (UUIDs, hex serials) are last resort.
@@ -22,6 +22,29 @@ class Evidence:
     device_type: str   # key in devtypes.TYPES
     weight: float      # 0..1 confidence contributed by this one signal
     detail: str
+
+
+@dataclass
+class ServiceRecord:
+    """One thing a device advertises or offers, as reported by a discovery protocol."""
+    protocol: str                  # mdns | upnp | ssdp | wsd | netbios | tcp
+    kind: str                      # service type as advertised: _ipp._tcp, avtransport, onvif types, ...
+    name: str = ""                 # instance / friendly name when the protocol gives one
+    port: int | None = None
+    url: str | None = None         # advertised endpoint (UPnP control URL, WS-Discovery XAddr)
+    soap: bool = False             # endpoint speaks SOAP; we list it, we never call it
+    details: dict[str, str] = field(default_factory=dict)
+
+    @property
+    def label(self) -> str:
+        return catalog.friendly(self.protocol, self.kind)
+
+    def to_dict(self) -> dict:
+        return {"protocol": self.protocol, "kind": self.kind, "label": self.label, "name": self.name,
+                "port": self.port, "url": self.url, "soap": self.soap, "details": dict(self.details)}
+
+
+_SERVICES_LOCK = threading.Lock()   # discovery modules add records from worker threads
 
 
 @dataclass
@@ -41,6 +64,7 @@ class Device:
     facts: dict[str, str] = field(default_factory=dict)       # misc key/values for details view
     text: list[str] = field(default_factory=list)             # free-text blobs for keyword rules
     web_urls: dict[str, tuple[str, int]] = field(default_factory=dict)   # url -> (source, rank; lower wins)
+    advertised: list[ServiceRecord] = field(default_factory=list)       # structured service listing
     is_gateway: bool = False
     random_mac: bool = False
     device_type: str = "unknown"
@@ -54,21 +78,39 @@ class Device:
         readable = [n for n in candidates if n and not _OPAQUE.match(n)]
         return (readable[0] if readable else None) or self.model or self.vendor or self.hostname or self.ip
 
-    def add_web_url(self, url: str, source: str, rank: int) -> None:
-        """Record a device-hosted admin page. Advertised URLs are untrusted input, so only the
-        device's own IP or its own mDNS name is accepted (and rewritten to the IP); a spoofed or
-        compromised device can't aim the 'open' action at some other site."""
+    def own_url(self, url: str | None) -> str | None:
+        """Normalise an advertised http(s) URL, or None if it doesn't point at this device. URLs a
+        device advertises are untrusted input: only its own IP or its own mDNS name is accepted
+        (and rewritten to the IP), so a spoofed or compromised device can't aim anything we show or
+        open at some other host."""
         try:
-            p = urlsplit(url.strip())
+            p = urlsplit((url or "").strip())
             port = p.port
         except ValueError:
-            return
+            return None
         own = {self.ip, (self.facts.get("mdns_host") or "").lower()}
         if p.scheme not in ("http", "https") or not p.hostname or p.hostname.lower() not in own:
-            return
-        clean = urlunsplit((p.scheme, self.ip + (f":{port}" if port else ""), p.path or "/", p.query, ""))
-        if clean not in self.web_urls or rank < self.web_urls[clean][1]:
+            return None
+        return urlunsplit((p.scheme, self.ip + (f":{port}" if port else ""), p.path or "/", p.query, ""))
+
+    def add_web_url(self, url: str, source: str, rank: int) -> None:
+        """Record a device-hosted admin page (see own_url for what is accepted)."""
+        clean = self.own_url(url)
+        if clean and (clean not in self.web_urls or rank < self.web_urls[clean][1]):
             self.web_urls[clean] = (source, rank)
+
+    def add_service(self, rec: ServiceRecord) -> None:
+        """Record an advertised service; identical records merge their details."""
+        if rec.url:
+            rec.url = self.own_url(rec.url)       # off-device endpoints are dropped, not listed
+        key = (rec.protocol, rec.kind, rec.name, rec.port, rec.url)
+        with _SERVICES_LOCK:
+            for have in self.advertised:
+                if (have.protocol, have.kind, have.name, have.port, have.url) == key:
+                    for k, v in rec.details.items():
+                        have.details.setdefault(k, v)
+                    return
+            self.advertised.append(rec)
 
     @property
     def web_url(self) -> str | None:
@@ -97,6 +139,8 @@ class Device:
             "type_label": self.type_label,
             "category": devtypes.category(self.device_type),
             "confidence": round(self.confidence, 2),
+            "advertised": [r.to_dict() for r in sorted(
+                self.advertised, key=lambda r: (r.protocol, r.kind, r.name, r.port or 0))],
             "web_url": self.web_url,
             "web_urls": [{"url": u, "source": s}
                          for u, (s, r) in sorted(self.web_urls.items(), key=lambda kv: (kv[1][1], kv[0]))],

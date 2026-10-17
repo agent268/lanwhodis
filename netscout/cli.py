@@ -27,6 +27,8 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--list-interfaces", action="store_true", help="show scannable interfaces and exit")
     p.add_argument("--check-rules", action="store_true",
                    help="validate your custom rules (see README, 'Custom rules') and exit")
+    p.add_argument("--services", action="store_true",
+                   help="include each device's advertised services in txt/md output (always in json/xlsx/html)")
     p.add_argument("--no-ports", action="store_true", help="skip TCP port probing (faster, quieter)")
     p.add_argument("-t", "--timeout", type=float, default=4.0,
                    help="seconds to listen for mDNS/SSDP/WSD replies (default 4)")
@@ -87,7 +89,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"netscout: {e}", file=sys.stderr)
         return 1
 
-    meta = {"networks": ", ".join(str(i.network) for i in ifaces)}
+    meta = {"networks": ", ".join(str(i.network) for i in ifaces), "with_services": args.services}
     for fmt, path in targets:
         if path is None:
             sys.stdout.write(export.render(devices, fmt, meta))  # type: ignore[arg-type]

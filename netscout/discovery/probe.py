@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 
 from .. import rules
-from ..model import Device
+from ..model import Device, ServiceRecord
 import sys
 
 from .base import ScanContext, run_cmd
@@ -46,6 +46,7 @@ def scan_ports(ctx: ScanContext, devices: list[Device], timeout: float = 0.7) ->
         d, p = job
         if not ctx.stop.is_set() and _open(d.ip, p, timeout):
             d.open_ports.add(p)
+            d.add_service(ServiceRecord("tcp", str(p), port=p))
         done += 1
         if done % 50 == 0:
             ctx.progress("ports", done / len(jobs))

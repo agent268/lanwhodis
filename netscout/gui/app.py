@@ -270,9 +270,9 @@ class MainWindow(QMainWindow):
         self.head_sub.setText(f"{snap['type_label']} · {int(snap['confidence'] * 100)}% confidence")
         e = html.escape
         rows = [("IP", snap["ip"]), ("OS", snap["os"] and f'{snap["os"]} ({int(snap["os_confidence"] * 100)}%)'), ("MAC", snap["mac"]), ("Vendor", snap["vendor"]), ("Model", snap["model"]),
-                ("Hostname", snap["hostname"]), ("Open ports", ", ".join(map(str, snap["open_ports"]))),
-                ("Services", ", ".join(s.split(":", 1)[-1] for s in snap["services"]))]
-        rows += [(k, v) for k, v in snap["facts"].items()]
+                ("Hostname", snap["hostname"]), ("Open ports", ", ".join(map(str, snap["open_ports"])))]
+        # per-service facts (mdns:_x._tcp = port N) are shown properly in "Advertised services" below
+        rows += [(k, v) for k, v in snap["facts"].items() if not k.startswith("mdns:")]
         rows += [("Name via " + k, v) for k, v in snap["names"].items()]
         body = "".join(f"<tr><td><b>{e(k)}</b></td><td>{e(str(v))}</td></tr>" for k, v in rows if v)
         body += "".join(f"<tr><td><b>Web UI</b></td><td><a href=\"{e(w['url'])}\">{e(w['url'])}</a> "
@@ -291,7 +291,15 @@ class MainWindow(QMainWindow):
                 items.append(f"<li><b>os/{e(x['source'])}</b> → {e(x['device_type'])} "
                              f"{int(x['weight'] * 100)}% <i>{e(str(x['detail']))}</i></li>")
         ev = "".join(items[:20])
-        self.detail.setHtml(f"<table cellpadding=3>{body}</table><h4>Why this type?</h4><ul>{ev}</ul>")
+        svc = "".join(
+            f"<p style='margin:6px 0 0 0'><b>{e(label)}</b></p><ul style='margin-top:2px'>"
+            + "".join(f"<li>{e(export.service_line(s))}"
+                      + (f" <i>{e(' · '.join(f'{k}={v}' for k, v in list(s['details'].items())[:5]))}</i>"
+                         if s["details"] and s["protocol"] in ("mdns", "wsd") else "") + "</li>" for s in items)
+            + "</ul>" for label, items in export.grouped_services(snap))
+        svc_html = f"<h4>Advertised services ({len(snap['advertised'])})</h4>{svc}" if svc else ""
+        self.detail.setHtml(f"<table cellpadding=3>{body}</table>{svc_html}"
+                            f"<h4>Why this type?</h4><ul>{ev}</ul>")
 
     # --- web UI / context menu -------------------------------------------------------------
     def selected_snap(self) -> dict | None:
