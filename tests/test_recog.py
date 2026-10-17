@@ -1,6 +1,6 @@
 """Rapid7 Recog integration: bundled databases load cleanly, matching resolves params, results feed
 the OS and device-type classifiers."""
-from netscout import classify, osdetect, recog
+from lanwhodis import classify, osdetect, recog
 from test_core import make
 
 
@@ -61,6 +61,6 @@ def test_annotate_is_idempotent_and_unknown_banners_match_nothing():
 
 
 def test_os_family_map_applied_for_mac_os_x():
-    from netscout import rules
+    from lanwhodis import rules
     m = recog.match("mdns.device-info.txt", "osxvers=22")
     assert recog.os_family_and_detail(m, rules.get().recog_os)[0] == "macOS"

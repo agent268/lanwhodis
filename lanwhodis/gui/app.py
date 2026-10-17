@@ -1,4 +1,4 @@
-"""netscout GUI (PySide6)."""
+"""lanwhodis GUI (PySide6)."""
 from __future__ import annotations
 
 import html
@@ -111,7 +111,7 @@ class ScanWorker(QObject):
 
 
 class EditDialog(QDialog):
-    """Correct what netscout thinks a device is: your name, type and notes are remembered by MAC."""
+    """Correct what lanwhodis thinks a device is: your name, type and notes are remembered by MAC."""
 
     def __init__(self, parent, snap: dict):
         super().__init__(parent)
@@ -163,7 +163,7 @@ class EditDialog(QDialog):
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("netscout")
+        self.setWindowTitle("LanWhodis")
         self.resize(1180, 720)
         self.labels = LabelStore()
         self.scanned: list = []         # interfaces of the scan in progress / last completed
@@ -346,7 +346,7 @@ class MainWindow(QMainWindow):
             if edited else "")
         self.model.item(row, 3).setToolTip(
             f"Last seen {_ago(hist['last_seen'])}" if offline and hist.get("last_seen") else "")
-        self.setWindowTitle(f"netscout — {sum(1 for s in self.snapshots.values() if not s.get('offline'))} devices")
+        self.setWindowTitle(f"LanWhodis — {sum(1 for s in self.snapshots.values() if not s.get('offline'))} devices")
 
     def _toggle_offline(self, on: bool) -> None:
         self.proxy.show_offline = on
@@ -519,7 +519,7 @@ class MainWindow(QMainWindow):
 
     # --- export ---------------------------------------------------------------------------
     def export_results(self) -> None:
-        path, chosen = QFileDialog.getSaveFileName(self, "Export results", "netscout-results.xlsx",
+        path, chosen = QFileDialog.getSaveFileName(self, "Export results", "lanwhodis-results.xlsx",
                                                    ";;".join(FILTERS.values()))
         if not path:
             return
@@ -541,7 +541,7 @@ class MainWindow(QMainWindow):
 
 def main() -> int:
     app = QApplication(sys.argv)
-    app.setApplicationName("netscout")
+    app.setApplicationName("LanWhodis")
     app.setStyle("Fusion")
     w = MainWindow()
     w.show()

@@ -45,7 +45,7 @@ def _rows(devices: Iterable[Device]) -> list[dict]:
 
 def _meta(devices: list[Device], meta: dict | None) -> dict:
     m = {"generated": datetime.now().astimezone().isoformat(timespec="seconds"),
-         "host": socket.gethostname(), "tool": "netscout", "count": len(devices)}
+         "host": socket.gethostname(), "tool": "lanwhodis", "count": len(devices)}
     m.update(meta or {})
     return m
 

@@ -1,4 +1,4 @@
-"""Build netscout/data/pen.tsv.gz from the IANA Private Enterprise Numbers registry.
+"""Build lanwhodis/data/pen.tsv.gz from the IANA Private Enterprise Numbers registry.
 
 SNMP's sysObjectID is 1.3.6.1.4.1.<enterprise number>...; the number names the vendor. Only the
 number and organisation are kept (the registry's contact names/emails are deliberately dropped).
@@ -17,7 +17,7 @@ import urllib.request
 from pathlib import Path
 
 URL = "https://www.iana.org/assignments/enterprise-numbers.txt"
-OUT = Path(__file__).resolve().parent.parent / "netscout" / "data" / "pen.tsv.gz"
+OUT = Path(__file__).resolve().parent.parent / "lanwhodis" / "data" / "pen.tsv.gz"
 
 
 def main() -> int:
@@ -27,7 +27,7 @@ def main() -> int:
     if args.src:
         text = args.src.read_text(encoding="utf-8", errors="replace")
     else:
-        req = urllib.request.Request(URL, headers={"User-Agent": "netscout-build"})
+        req = urllib.request.Request(URL, headers={"User-Agent": "lanwhodis-build"})
         text = urllib.request.urlopen(req, timeout=60).read().decode("utf-8", "replace")
 
     updated = (re.search(r"\(last updated ([\d-]+)\)", text) or [None, "unknown"])[1]

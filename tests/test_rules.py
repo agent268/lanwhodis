@@ -1,7 +1,7 @@
 """Declarative rules: packaged rules validate, user rules add/override, bad user rules are skipped."""
 import pytest
 
-from netscout import classify, rules as rules_mod
+from lanwhodis import classify, rules as rules_mod
 from test_core import make, os_of
 
 

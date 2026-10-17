@@ -1,6 +1,6 @@
 # Vendor rules: regex searched (case-insensitive) in the OUI / UPnP manufacturer string.
 # `votes` maps device type -> weight (0..1). Weights for the same type combine by noisy-OR.
-# Device types are listed in netscout/devtypes.py.
+# Device types are listed in lanwhodis/devtypes.py.
 
 [[rule]]
 match = 'raspberry pi'

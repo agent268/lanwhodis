@@ -19,7 +19,7 @@ from pathlib import Path
 from . import devtypes, oui, paths
 from .model import Device, Evidence
 
-log = logging.getLogger("netscout.labels")
+log = logging.getLogger("lanwhodis.labels")
 _KEEP = object()          # "leave this field unchanged" (None means "clear it")
 
 
@@ -164,7 +164,7 @@ def suggest_rules(store: LabelStore) -> str:
         vendor, typ = (e.get("auto") or {}).get("vendor"), e.get("type")
         if vendor and typ:
             by_vendor.setdefault(vendor, set()).add(typ)
-    out = ["# Suggested from your corrections (netscout --suggest-rules). Save as <rules dir>/vendor.toml.",
+    out = ["# Suggested from your corrections (lanwhodis --suggest-rules). Save as <rules dir>/vendor.toml.",
            "# Each vote is moderate (0.6): a nudge for this vendor's other devices, not a certainty.", ""]
     for vendor, types in sorted(by_vendor.items()):
         if len(types) != 1:

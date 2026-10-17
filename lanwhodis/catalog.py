@@ -1,4 +1,4 @@
-"""Friendly display names for advertised services (data: netscout/data/catalog.toml)."""
+"""Friendly display names for advertised services (data: lanwhodis/data/catalog.toml)."""
 from __future__ import annotations
 
 import tomllib
@@ -8,7 +8,7 @@ from importlib import resources
 
 @lru_cache(maxsize=1)
 def _catalog() -> dict[str, dict[str, str]]:
-    text = (resources.files("netscout") / "data" / "catalog.toml").read_text(encoding="utf-8")
+    text = (resources.files("lanwhodis") / "data" / "catalog.toml").read_text(encoding="utf-8")
     return tomllib.loads(text)
 
 

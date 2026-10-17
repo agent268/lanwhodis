@@ -1,8 +1,8 @@
 """Presence history: baselines, debounced leaving, returning, IP moves, network scoping, retention."""
 import pytest
 
-from netscout import history
-from netscout.history import History
+from lanwhodis import history
+from lanwhodis.history import History
 from test_core import make
 
 NET_A, NET_B = "192.168.1.0/24", "10.0.0.0/24"
@@ -122,8 +122,8 @@ def test_summary_lines_and_clear(hist):
 
 # --- CLI / export integration ------------------------------------------------------------
 def test_cli_known_events_and_forget(tmp_path, monkeypatch, capsys):
-    from netscout import cli
-    monkeypatch.setenv("NETSCOUT_HOME", str(tmp_path))
+    from lanwhodis import cli
+    monkeypatch.setenv("LANWHODIS_HOME", str(tmp_path))
     h = History()
     a = dev("192.168.1.2", "aa:00:00:00:00:01", "tv")
     h.record([a], [NET_A], now=1000)
@@ -140,10 +140,10 @@ def test_cli_known_events_and_forget(tmp_path, monkeypatch, capsys):
 def test_cli_record_skips_cancelled_and_disabled_scans(tmp_path, monkeypatch):
     import threading
     from types import SimpleNamespace
-    from netscout import cli
-    from netscout.discovery.base import Iface
+    from lanwhodis import cli
+    from lanwhodis.discovery.base import Iface
     import ipaddress
-    monkeypatch.setenv("NETSCOUT_HOME", str(tmp_path))
+    monkeypatch.setenv("LANWHODIS_HOME", str(tmp_path))
     ifaces = [Iface("eth0", "192.168.1.5", ipaddress.ip_network(NET_A))]
     devices = [dev("192.168.1.2", "aa:00:00:00:00:01")]
     stopped = threading.Event()
@@ -156,7 +156,7 @@ def test_cli_record_skips_cancelled_and_disabled_scans(tmp_path, monkeypatch):
 
 
 def test_first_seen_column_in_exports(hist):
-    from netscout import export
+    from lanwhodis import export
     d = dev("192.168.1.2", "aa:00:00:00:00:01")
     hist.record([d], [NET_A], now=1_700_000_000)
     csv = export.render([d], "csv")

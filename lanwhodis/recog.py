@@ -3,7 +3,7 @@
 Recog databases are XML lists of ``<fingerprint pattern=...>`` entries. A banner is matched against a
 database's patterns in file order and the first match wins; its ``<param>`` elements describe the
 product (``pos="0"`` is a literal ``value``, ``pos="N"`` is regex capture group N). We bundle the
-databases for banners netscout already collects (SSH, HTTP Server/<title>/WWW-Authenticate, RTSP,
+databases for banners lanwhodis already collects (SSH, HTTP Server/<title>/WWW-Authenticate, RTSP,
 SNMP, mDNS _device-info) and map the results onto device types / OS families via
 data/rules/recog.toml. Refresh the data with tools/update_recog.py.
 """
@@ -46,7 +46,7 @@ class Database:
 @lru_cache(maxsize=None)
 def database(key: str) -> Database:
     db = Database(key)
-    raw = (resources.files("netscout") / "data" / "recog" / f"{_FILES[key]}.xml.gz").read_bytes()
+    raw = (resources.files("lanwhodis") / "data" / "recog" / f"{_FILES[key]}.xml.gz").read_bytes()
     for fp in ET.fromstring(gzip.decompress(raw)).findall("fingerprint"):
         try:
             rx = re.compile(fp.get("pattern", ""))

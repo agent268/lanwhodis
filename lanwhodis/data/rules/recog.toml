@@ -1,4 +1,4 @@
-# How Rapid7 Recog fingerprint results map onto netscout concepts (see netscout/recog.py).
+# How Rapid7 Recog fingerprint results map onto lanwhodis concepts (see lanwhodis/recog.py).
 # Recog values with no entry here carry no vote (Test Instrument, Tape Library, PLC, ...).
 
 # Recog hw.device / os.device value -> device-type votes. A Recog hw.certainty/os.certainty
@@ -61,7 +61,7 @@
 [os_ignore]
 devices = ["Printer", "Multifunction Device", "Print Server", "Scanner"]
 
-# Recog os.family -> netscout OS family name. Families not listed here pass through unchanged.
+# Recog os.family -> lanwhodis OS family name. Families not listed here pass through unchanged.
 [os_family]
 "Mac OS X" = "macOS"
 "IOS" = "Cisco IOS"

@@ -3,7 +3,7 @@
 Signals: ICMP TTL, SSH/HTTP/UPnP/RTSP banner strings, Apple model identifiers, well-known port
 signatures, hostnames and vendor. Like the type classifier, each signal votes {os_family: weight},
 combined by noisy-OR. Passive TCP/IP-stack and DHCP fingerprinting need raw sockets and are
-deliberately out of scope here. The rules are data: see rules.py and netscout/data/rules/os.toml.
+deliberately out of scope here. The rules are data: see rules.py and lanwhodis/data/rules/os.toml.
 """
 from __future__ import annotations
 

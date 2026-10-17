@@ -25,7 +25,7 @@ from . import paths
 from .labels import key_for
 from .model import Device
 
-log = logging.getLogger("netscout.history")
+log = logging.getLogger("lanwhodis.history")
 
 MISSING_AFTER = 2        # consecutive scans a device must miss before it counts as "left"
 RETENTION_DAYS = 365

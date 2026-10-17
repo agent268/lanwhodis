@@ -63,7 +63,7 @@ def _describe(url: str, expect_ip: str) -> dict | None:
     if urlparse(url).hostname != expect_ip:
         return None
     try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "netscout"}),
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "lanwhodis"}),
                                     timeout=2.5) as r:
             root = ET.fromstring(r.read(262144))
     except Exception:

@@ -1,4 +1,4 @@
-"""Build netscout/data/oui.tsv.gz from the IEEE registries (MA-L, MA-M, MA-S).
+"""Build lanwhodis/data/oui.tsv.gz from the IEEE registries (MA-L, MA-M, MA-S).
 
 Usage:
     python tools/build_oui.py              # download from standards-oui.ieee.org
@@ -24,7 +24,7 @@ SOURCES = {
     "oui36.csv": "https://standards-oui.ieee.org/oui36/oui36.csv",
 }
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/130 Safari/537.36"
-OUT = Path(__file__).resolve().parent.parent / "netscout" / "data" / "oui.tsv.gz"
+OUT = Path(__file__).resolve().parent.parent / "lanwhodis" / "data" / "oui.tsv.gz"
 
 
 def fetch(name: str, src_dir: Path | None) -> str:

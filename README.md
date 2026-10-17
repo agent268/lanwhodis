@@ -1,7 +1,13 @@
-# netscout
+# LanWhodis
+
+*New phone, who dis?* - but for every gadget on your network.
 
 Local-network device scanner for consumer and SMB gear. One Python core, two front ends (CLI + PySide6 GUI),
 runs on Windows, Linux and SteamOS (desktop mode). No elevation required.
+
+> Formerly "netscout". Your data directory is migrated automatically on first run (`%APPDATA%\netscout` ->
+> `%APPDATA%\lanwhodis`, or the XDG equivalent) and the old `NETSCOUT_HOME` variable still works as an alias
+> for `LANWHODIS_HOME`.
 
 ## Install
 
@@ -9,11 +15,11 @@ runs on Windows, Linux and SteamOS (desktop mode). No elevation required.
 
 ## Use
 
-    netscout                                  # scan, print a table
-    netscout -o scan.xlsx -o scan.json        # format inferred from extension
-    netscout -f md > scan.md                  # text formats can go to stdout
-    netscout --list-interfaces ; netscout -i Wi-Fi --no-ports -v
-    netscout-gui
+    lanwhodis                                  # scan, print a table
+    lanwhodis -o scan.xlsx -o scan.json        # format inferred from extension
+    lanwhodis -f md > scan.md                  # text formats can go to stdout
+    lanwhodis --list-interfaces ; lanwhodis -i Wi-Fi --no-ports -v
+    lanwhodis-gui
 
 Formats: json, html, md, csv, xlsx, pdf, txt (GUI: Export… button).
 
@@ -24,7 +30,7 @@ Formats: json, html, md, csv, xlsx, pdf, txt (GUI: Export… button).
 3. **Service discovery** - mDNS/DNS-SD (all service types), SSDP/UPnP (+ device description XML),
    WS-Discovery (ONVIF cameras, WSD printers), NetBIOS names.
 4. **Probes** - TCP port set, HTTP title/Server, SSH/RTSP banners, Roku ECP, Google Cast, reverse DNS.
-5. **Classifier** (`netscout/classify.py`) - rule tables vote `{type: weight}`; votes combine by noisy-OR;
+5. **Classifier** (`lanwhodis/classify.py`) - rule tables vote `{type: weight}`; votes combine by noisy-OR;
    generic types (IoT, Computer) only win when nothing specific has >= 45% support. The GUI's detail pane and
    the XLSX "Evidence" sheet show exactly why each type was chosen.
 
@@ -32,11 +38,11 @@ Adding a device type: `devtypes.py` (catalog) + `icons.py` (SVG) + rules in `cla
 
 ## Layout
 
-`netscout/` core is Qt-free and importable as a library (`scanner.scan()`, `export.render()`); `netscout/gui/` is the only Qt code.
+`lanwhodis/` core is Qt-free and importable as a library (`scanner.scan()`, `export.render()`); `lanwhodis/gui/` is the only Qt code.
 
 ## OS detection
 
-`netscout/osdetect.py` votes an OS family (+ detail) from: ICMP TTL, SSH/HTTP/UPnP/RTSP banners, Apple model
+`lanwhodis/osdetect.py` votes an OS family (+ detail) from: ICMP TTL, SSH/HTTP/UPnP/RTSP banners, Apple model
 identifiers, port signatures (3389/135 Windows, 62078 iOS, 8060 Roku, ...), NetBIOS, vendor, and - for the
 scanning machine itself - the exact local OS. TTL alone is labelled "TTL guess" and only nudges the device type.
 OS and device type feed each other (a Roku OS device is a streaming box; a Windows host with `arm64` in its name
@@ -51,8 +57,8 @@ with real output samples. WSL2 NAT only sees its own vNAT subnet, so LAN discove
 
 ## Custom rules
 
-Classification rules are data (`netscout/data/rules/*.toml`, packaged and strictly validated). To teach netscout
-about your own gear, drop files with the **same names** in your rules folder (`netscout --check-rules` prints its
+Classification rules are data (`lanwhodis/data/rules/*.toml`, packaged and strictly validated). To teach lanwhodis
+about your own gear, drop files with the **same names** in your rules folder (`lanwhodis --check-rules` prints its
 location and validates them; a bad rule is reported and skipped, never fatal):
 
     # <rules dir>/vendor.toml  - regex on the OUI / UPnP manufacturer, votes are device-type -> weight (0..1)
@@ -65,12 +71,12 @@ location and validates them; a bad rule is reported and skipped, never fatal):
     "mdns:_acme._tcp" = { pet_feeder = 0.95 }
 
 Files: `vendor`, `names` (hostnames/friendly names), `text` (banners, models, titles), `services`, `ports`, `os`.
-Weights for one type combine by noisy-OR; valid types are in `netscout/devtypes.py`.
+Weights for one type combine by noisy-OR; valid types are in `lanwhodis/devtypes.py`.
 
 ## Banner fingerprinting (Rapid7 Recog)
 
 SSH, HTTP (Server / `<title>` / WWW-Authenticate), RTSP, SNMP and mDNS `_device-info` banners are matched against
-bundled [Rapid7 Recog](https://github.com/rapid7/recog) databases (BSD-2-Clause, notice in `netscout/data/recog/`),
+bundled [Rapid7 Recog](https://github.com/rapid7/recog) databases (BSD-2-Clause, notice in `lanwhodis/data/recog/`),
 pinned to a commit recorded in `data/recog/SOURCE.txt`. Results (product, OS vendor/version, hardware device and
 model) feed OS detection and the device-type classifier through `data/rules/recog.toml`. Refresh with
 `python tools/update_recog.py`.
@@ -92,10 +98,10 @@ Both are read-only and unauthenticated, on by default, and skipped with `--no-sn
 Wrong guess? Fix it once and it sticks. GUI: right-click a device -> **Edit name / type / notes...** (reset any time).
 CLI:
 
-    netscout --label aa:bb:cc:dd:ee:01 --set-type camera --set-name "Porch Cam" --set-notes "front door"
-    netscout --list-labels            # your corrections next to what was auto-detected (!= marks disagreements)
-    netscout --forget aa:bb:cc:dd:ee:01
-    netscout --suggest-rules > vendor.toml    # turn corrections into custom vendor rules (review first)
+    lanwhodis --label aa:bb:cc:dd:ee:01 --set-type camera --set-name "Porch Cam" --set-notes "front door"
+    lanwhodis --list-labels            # your corrections next to what was auto-detected (!= marks disagreements)
+    lanwhodis --forget aa:bb:cc:dd:ee:01
+    lanwhodis --suggest-rules > vendor.toml    # turn corrections into custom vendor rules (review first)
 
 Corrections live in `labels.json` in the data dir, keyed by MAC (phones with randomized MACs keep one MAC per
 network). They override the type/name with 100% confidence, the scanner's own verdict is kept beside them, and each
@@ -109,10 +115,10 @@ Every completed scan is recorded in a local SQLite file (`history.db` in the dat
 **returned**, **moved** (same MAC, new IP) and **left** events. WiFi gear naps, so a device only counts as *left* after
 missing two consecutive scans. Networks are tracked independently, and a stopped (partial) scan is never recorded.
 
-    netscout                      # prints "history: NEW 192.168.1.51 ..." lines after the table (stderr)
-    netscout --watch 10           # rescan every 10 minutes, print only what changed
-    netscout --known              # every device ever seen: first/last seen, online/offline
-    netscout --events 50          # recent change events
+    lanwhodis                      # prints "history: NEW 192.168.1.51 ..." lines after the table (stderr)
+    lanwhodis --watch 10           # rescan every 10 minutes, print only what changed
+    lanwhodis --known              # every device ever seen: first/last seen, online/offline
+    lanwhodis --events 50          # recent change events
 
 GUI: a Status column (New / Returned / Offline), remembered-but-silent devices shown dimmed ("Show offline"), and
 a summary in the status bar. Exports gain a "First seen" column; JSON has a `history` object per device.

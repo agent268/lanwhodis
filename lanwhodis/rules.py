@@ -1,6 +1,6 @@
 """Declarative classification rules, loaded from TOML.
 
-Packaged rules live in ``netscout/data/rules/*.toml`` and are validated strictly (a bad packaged
+Packaged rules live in ``lanwhodis/data/rules/*.toml`` and are validated strictly (a bad packaged
 rule is a bug). Users can add or override rules with files of the same names in
 ``<data dir>/rules`` (see ``paths.rules_dir``); those are validated leniently - a bad user rule is
 reported and skipped so it can never break a scan.
@@ -27,7 +27,7 @@ from typing import Callable
 
 from . import devtypes, paths
 
-log = logging.getLogger("netscout.rules")
+log = logging.getLogger("lanwhodis.rules")
 
 Votes = dict[str, float]
 RegexRules = list[tuple["re.Pattern[str]", Votes]]
@@ -185,7 +185,7 @@ def _read_toml(path: Path | None, text: str | None = None) -> dict:
 
 def load(user_dir: Path | None = None, use_user: bool = True) -> RuleSet:
     rs = RuleSet()
-    pkg = resources.files("netscout") / "data" / "rules"
+    pkg = resources.files("lanwhodis") / "data" / "rules"
     for name in FILES:
         _apply(rs, name, _read_toml(Path(name), (pkg / name).read_text(encoding="utf-8")), True, f"[{name}]")
     if use_user:

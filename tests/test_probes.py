@@ -3,8 +3,8 @@ import socket
 import struct
 import threading
 
-from netscout import classify, pen, recog
-from netscout.discovery import ber, smb, snmp
+from lanwhodis import classify, pen, recog
+from lanwhodis.discovery import ber, smb, snmp
 from test_core import make
 
 

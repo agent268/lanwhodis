@@ -58,7 +58,7 @@ def scan_ports(ctx: ScanContext, devices: list[Device], timeout: float = 0.7) ->
 
 def _http_get(url: str, timeout: float = 2.0) -> tuple[str, dict, str] | None:
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "netscout"})
+        req = urllib.request.Request(url, headers={"User-Agent": "lanwhodis"})
         with urllib.request.urlopen(req, timeout=timeout, context=_UNVERIFIED) as r:
             return str(r.status), dict(r.headers), r.read(16384).decode("utf-8", "replace")
     except urllib.error.HTTPError as e:   # 401/403 pages still carry Server header and title

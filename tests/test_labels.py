@@ -3,8 +3,8 @@ import json
 
 import pytest
 
-from netscout import classify, cli, export, labels, rules as rules_mod
-from netscout.labels import LabelStore
+from lanwhodis import classify, cli, export, labels, rules as rules_mod
+from lanwhodis.labels import LabelStore
 from test_core import make
 
 MAC = "aa:bb:cc:dd:ee:01"
@@ -128,7 +128,7 @@ def test_suggest_rules_generates_a_valid_loadable_rule(store, tmp_path):
 
 
 def test_cli_label_list_forget_and_types(tmp_path, monkeypatch, capsys):
-    monkeypatch.setenv("NETSCOUT_HOME", str(tmp_path))
+    monkeypatch.setenv("LANWHODIS_HOME", str(tmp_path))
     assert cli.main(["--label", MAC, "--set-type", "camera", "--set-name", "Porch Cam", "--set-notes", "front"]) == 0
     assert cli.main(["--label", MAC]) == 2                           # needs something to set
     assert cli.main(["--label", MAC, "--set-type", "toaster"]) == 2   # invalid type rejected

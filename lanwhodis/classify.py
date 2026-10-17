@@ -3,7 +3,7 @@
 Every signal (OUI vendor, mDNS/UPnP/WS-Discovery services, open ports, names, banners) casts votes
 {device_type: weight}. Votes for the same type combine with noisy-OR, so many weak hints add up but
 never exceed certainty. Generic types ("iot", "computer") only win when no specific type has
-reasonable support. The rules themselves are data: see rules.py and netscout/data/rules/*.toml.
+reasonable support. The rules themselves are data: see rules.py and lanwhodis/data/rules/*.toml.
 """
 from __future__ import annotations
 

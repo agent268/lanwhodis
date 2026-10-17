@@ -3,9 +3,9 @@ import zipfile
 
 import pytest
 
-from netscout import classify, devtypes, export, icons, oui
-from netscout.discovery.sweep import _NBSTAT, _parse_nbstat
-from netscout.model import Device, DeviceTable
+from lanwhodis import classify, devtypes, export, icons, oui
+from lanwhodis.discovery.sweep import _NBSTAT, _parse_nbstat
+from lanwhodis.model import Device, DeviceTable
 
 
 def make(ip="192.168.1.50", mac=None, **kw) -> Device:
@@ -82,7 +82,7 @@ def test_nothing_known_is_unknown():
 
 
 def test_every_device_type_has_an_icon_and_rules_load_clean():
-    from netscout import rules
+    from lanwhodis import rules
     rs = rules.load(use_user=False)          # packaged rules validate strictly: types, weights, regexes
     assert len(rs.vendor) > 50 and len(rs.services) > 50 and len(rs.os_text) > 30 and rs.ports[445]
     assert not rs.errors
@@ -102,7 +102,7 @@ def test_nbstat_request_shape():
 
 
 def test_nbstat_response_parse():
-    from netscout.discovery.sweep import _NAME_ENC
+    from lanwhodis.discovery.sweep import _NAME_ENC
     hdr = b"\x13\x37\x84\x00\x00\x00\x00\x01\x00\x00\x00\x00" + _NAME_ENC
     rr = b"\x00\x21\x00\x01\x00\x00\x00\x00\x00\x3f"
     def ent(name, suffix, flags):
@@ -158,7 +158,7 @@ def test_format_inference():
 
 
 # --- OS detection ------------------------------------------------------------------------
-from netscout import osdetect
+from lanwhodis import osdetect
 
 
 def os_of(**kw):
@@ -213,7 +213,7 @@ def test_os_in_exports(devices):
 
 
 # --- OS-specific command output parsers --------------------------------------------------
-from netscout.discovery import net as netmod
+from lanwhodis.discovery import net as netmod
 
 WIN_ARP = """
 Interface: 192.168.1.18 --- 0x12
@@ -258,7 +258,7 @@ def test_local_os_is_authoritative():
 
 def test_clamped_subnet_keeps_gateway_probeable():
     import ipaddress
-    from netscout.discovery.base import Iface
+    from lanwhodis.discovery.base import Iface
     i = Iface("eth0", "172.19.233.225", ipaddress.ip_network("172.19.233.0/24"),
               full_network=ipaddress.ip_network("172.19.224.0/20"), extra_hosts=["172.19.224.1"])
     assert "172.19.224.1" in i.hosts()
@@ -360,7 +360,7 @@ def test_web_url_in_exports(devices):
 
 def test_empty_404_is_not_a_web_ui_but_a_real_page_is(monkeypatch):
     # regression: Cast devices answer 8443 with an empty 404 labelled text/html
-    from netscout.discovery import probe
+    from lanwhodis.discovery import probe
     d = make("192.168.1.123")
     d.open_ports = {8443}
     monkeypatch.setattr(probe, "_http_get", lambda *a, **k: ("404", {"Content-Type": "text/html"}, ""))
@@ -372,8 +372,8 @@ def test_empty_404_is_not_a_web_ui_but_a_real_page_is(monkeypatch):
 
 
 # --- advertised services -----------------------------------------------------------------
-from netscout.discovery.wsd import parse_probe_match
-from netscout.model import ServiceRecord
+from lanwhodis.discovery.wsd import parse_probe_match
+from lanwhodis.model import ServiceRecord
 
 ONVIF_MATCH = """<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"
  xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery">
@@ -411,7 +411,7 @@ def test_add_service_dedupes_merges_details_and_drops_offdevice_urls():
 
 
 def test_catalog_friendly_names_and_fallbacks():
-    from netscout import catalog
+    from lanwhodis import catalog
     assert catalog.friendly("mdns", "_ipp._tcp") == "Internet Printing (IPP)"
     assert catalog.friendly("tcp", "445") == "SMB"
     assert catalog.friendly("ssdp", "urn:schemas-upnp-org:service:AVTransport:1") == "AV transport"

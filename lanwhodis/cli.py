@@ -1,4 +1,4 @@
-"""netscout command line: scan the local network and print or export the results."""
+"""lanwhodis command line: scan the local network and print or export the results."""
 from __future__ import annotations
 
 import argparse
@@ -14,7 +14,7 @@ from .discovery import net
 
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="netscout",
+        prog="lanwhodis",
         description="Discover and identify consumer/SMB devices on the local network.",
         epilog="Output format is inferred from each -o extension "
                f"({', '.join(export.FORMATS)}). Without -o, a text table is printed.")
@@ -57,7 +57,7 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("-t", "--timeout", type=float, default=4.0,
                    help="seconds to listen for mDNS/SSDP/WSD replies (default 4)")
     p.add_argument("-v", "--verbose", action="store_true", help="log discovery progress to stderr")
-    p.add_argument("-V", "--version", action="version", version=f"netscout {__version__}")
+    p.add_argument("-V", "--version", action="version", version=f"lanwhodis {__version__}")
     return p
 
 
@@ -95,7 +95,7 @@ def _label_command(args) -> int | None:
             return 0
         key = labels.normalize_key(args.label, net.read_arp())
         if args.set_type is None and args.set_name is None and args.set_notes is None:
-            print("netscout: --label needs at least one of --set-type, --set-name, --set-notes", file=sys.stderr)
+            print("lanwhodis: --label needs at least one of --set-type, --set-name, --set-notes", file=sys.stderr)
             return 2
         fields = {n: v for n, v in (("type", args.set_type), ("name", args.set_name), ("notes", args.set_notes))
                   if v is not None}
@@ -104,7 +104,7 @@ def _label_command(args) -> int | None:
         print(f"saved {key}: " + ", ".join(f"{k}={v!r}" for k, v in fields.items()))
         return 0
     except ValueError as e:
-        print(f"netscout: {e}", file=sys.stderr)
+        print(f"lanwhodis: {e}", file=sys.stderr)
         return 2
 
 
@@ -122,7 +122,7 @@ def _record(devices, ifaces, args, stop):
     try:
         return history.History().record(devices, [str(i.network) for i in ifaces])
     except (sqlite3.Error, OSError) as e:
-        print(f"netscout: history unavailable ({e})", file=sys.stderr)
+        print(f"lanwhodis: history unavailable ({e})", file=sys.stderr)
         return None
 
 
@@ -134,7 +134,7 @@ def _watch(args, ifaces, stop, log) -> int:
         try:
             devices = _scan(args, ifaces, stop, log)
         except RuntimeError as e:
-            print(f"netscout: {e}", file=sys.stderr)
+            print(f"lanwhodis: {e}", file=sys.stderr)
             return 1
         diff = _record(devices, ifaces, args, stop)
         stamp = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -170,7 +170,7 @@ def _history_command(args) -> int | None:
                 print(f"{fmt(e.ts)}  {e.kind.upper():<10} {e.name[:26]:<26} {e.detail}")
         return 0
     except (sqlite3.Error, OSError) as e:
-        print(f"netscout: history unavailable ({e})", file=sys.stderr)
+        print(f"lanwhodis: history unavailable ({e})", file=sys.stderr)
         return 1
 
 
@@ -202,29 +202,29 @@ def main(argv: list[str] | None = None) -> int:
         q = args.interface.lower()
         ifaces = [i for i in ifaces if q in i.name.lower() or q in i.ip]
     if not ifaces:
-        print("netscout: no matching IPv4 interface found", file=sys.stderr)
+        print("lanwhodis: no matching IPv4 interface found", file=sys.stderr)
         return 2
 
     targets: list[tuple[str, str | None]] = []   # (format, path or None for stdout)
     for path in args.output:
         fmt = args.format if export.format_for_path(path) is None else export.format_for_path(path)
         if fmt is None:
-            print(f"netscout: can't infer format for {path!r}; use -f", file=sys.stderr)
+            print(f"lanwhodis: can't infer format for {path!r}; use -f", file=sys.stderr)
             return 2
         targets.append((fmt, path))
     if not targets:
         fmt = args.format or "txt"
         if fmt in export.BINARY:
-            print(f"netscout: {fmt} is binary; use -o FILE.{fmt}", file=sys.stderr)
+            print(f"lanwhodis: {fmt} is binary; use -o FILE.{fmt}", file=sys.stderr)
             return 2
         targets.append((fmt, None))
 
     stop = threading.Event()
     signal.signal(signal.SIGINT, lambda *_: stop.set())
-    log = (lambda m: print(f"[netscout] {m}", file=sys.stderr)) if args.verbose else (lambda m: None)
+    log = (lambda m: print(f"[lanwhodis] {m}", file=sys.stderr)) if args.verbose else (lambda m: None)
     if args.watch:
         if args.output or args.format or args.no_history:
-            print("netscout: --watch prints change events from the history; it can't be combined with "
+            print("lanwhodis: --watch prints change events from the history; it can't be combined with "
                   "-o / -f / --no-history", file=sys.stderr)
             return 2
         return _watch(args, ifaces, stop, log)
@@ -234,7 +234,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         devices = _scan(args, ifaces, stop, log)
     except RuntimeError as e:
-        print(f"netscout: {e}", file=sys.stderr)
+        print(f"lanwhodis: {e}", file=sys.stderr)
         return 1
     diff = _record(devices, ifaces, args, stop)
     for line in (diff.summary_lines() if diff else []):

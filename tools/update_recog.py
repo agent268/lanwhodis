@@ -1,4 +1,4 @@
-"""Fetch the Rapid7 Recog fingerprint databases netscout uses into netscout/data/recog/*.xml.gz.
+"""Fetch the Rapid7 Recog fingerprint databases lanwhodis uses into lanwhodis/data/recog/*.xml.gz.
 
 Recog (https://github.com/rapid7/recog) is BSD-2-Clause; the notice shipped alongside the data is
 written to data/recog/LICENSE.txt. Files are pinned to a commit so the bundled data is reproducible.
@@ -19,8 +19,8 @@ from pathlib import Path
 REPO = "rapid7/recog"
 DATABASES = ["ssh_banners", "http_servers", "html_title", "http_wwwauth", "rtsp_servers", "snmp_sysdescr",
              "snmp_sysobjid", "mdns_device-info_txt"]
-OUT = Path(__file__).resolve().parent.parent / "netscout" / "data" / "recog"
-UA = {"User-Agent": "netscout-update-recog"}
+OUT = Path(__file__).resolve().parent.parent / "lanwhodis" / "data" / "recog"
+UA = {"User-Agent": "lanwhodis-update-recog"}
 
 LICENSE = """Rapid7 Recog fingerprint databases (https://github.com/rapid7/recog)
 

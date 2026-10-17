@@ -11,7 +11,7 @@ _PREFIX = "1.3.6.1.4.1."
 @lru_cache(maxsize=1)
 def _table() -> dict[int, str]:
     table: dict[int, str] = {}
-    path = resources.files("netscout") / "data" / "pen.tsv.gz"
+    path = resources.files("lanwhodis") / "data" / "pen.tsv.gz"
     if not path.is_file():
         return table
     for line in gzip.decompress(path.read_bytes()).decode("utf-8").splitlines():
