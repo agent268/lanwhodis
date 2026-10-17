@@ -1,0 +1,69 @@
+You are helping me build UI in the "LanWhodis" design language (it descends from steamos-fm). Follow it closely and ask before you deviate.
+
+CHARACTER
+Deep navy surfaces, ONE blue accent, rounded cards, icon tiles tinted by category, boxed sections with small uppercase letter-spaced titles. Calm, dense, friendly to a mouse and a game controller. No drop shadows. No gradients. No emoji as icons.
+
+TOKENS (use the names in code; never hard-code hex inside a component)
+Colors are #RRGGBB, except scrim which is #AARRGGBB.
+bg: dark #0e141b | light #f0f4f8 | deck #0e141b
+surface: dark #1a2332 | light #ffffff | deck #1a2332
+surfaceAlt: dark #222d3e | light #e4e9f0 | deck #222d3e
+accent: dark #4a9eff | light #1a6bc2 | deck #f38020
+accentDim: dark #2c5f99 | light #1255a0 | deck #c06010
+selected: dark #1e3a5f | light #c8dff7 | deck #3d2a18
+text: dark #e8edf2 | light #1c2535 | deck #e8edf2
+textDim: dark #8696a8 | light #5d6d80 | deck #8696a8
+divider: dark #2a3545 | light #d0d8e0 | deck #2a3545
+dialogSurface: dark #232e3d | light #ffffff | deck #232e3d
+dialogBorder: dark #3c4d61 | light #c3cedb | deck #3c4d61
+scrim: dark #a6040a0d | light #66141e2d | deck #a6040a0d
+sectionSurface: dark #1f2a3a | light #f4f7fb | deck #1f2a3a
+sectionBorder: dark #33445b | light #c3cedb | deck #33445b
+buttonSurface: dark #33455e | light #e2e9f1 | deck #34455c
+buttonBorder: dark #5578a3 | light #93a7bd | deck #5a7699
+inputSurface: dark #0f1722 | light #ffffff | deck #0f1722
+success: dark #4cc38a | light #2e8f5e | deck #4cc38a
+warning: dark #e0a84f | light #b87a1c | deck #e0a84f
+danger: dark #e5534b | light #c93a33 | deck #e5534b
+Add one token the original lacks: onAccent = #0e141b on dark and deck, #ffffff on light (label color on accent/danger fills).
+Category colors (device kinds, never state): Computers #4C8DFF, Mobile #B36BFF, Media #FF7A59, Gaming #2EC4A0, Smart Home #F2B01E, Peripherals #6E8BA8, Network #3FB6E8, Other #8A94A3.
+
+SCALE (everything is a multiple of one unit; unit = 20px x user zoom)
+fontSizeSm = 0.62u (12.4px); fontSize = 0.75u (15px); fontSizeLg = 0.95u (19px); fontSizeXl = 1.35u (27px); rowHeight = 1.9u (38px); radius = 0.5u (10px); radiusLg = 0.8u (16px); pad = 0.5u (10px); gap = 0.6u (12px).
+Fonts: the platform UI font (Segoe UI / system-ui / DejaVu Sans). Monospace only for IPs, MACs and literals. Weights: regular and bold only.
+Section titles: uppercase, bold, fontSizeSm, letter-spacing 0.08u, textDim.
+
+SHAPE AND DEPTH
+Radius: 0.5u controls and sections, 0.8u cards and dialogs, pills fully rounded, icon tiles 28% of their size. Borders are always 1px (selected card: 2px accent). Depth comes only from stepping surface colors (bg -> surface -> surfaceAlt / dialogSurface) plus a hairline border. Every layer must be a clearly visible step lighter than the one below it.
+
+RECIPES
+- Icon tile: rounded square, fill = category color at 17%, border = 38%, glyph at 54% of the tile in the full category color. Offline: 8% / 15%, glyph at 45% opacity.
+- Chip: height 1.3u, pill, fontSizeSm bold, text = tone, fill 16%, border 35%. Tones: neutral(textDim), accent, success, warning, danger.
+- Button: height 2.1u, radius 0.5u, 1px border, optional 1.1 x fontSizeLg icon. Default = buttonSurface + buttonBorder. Primary = accent fill, bold. Danger = danger fill, bold. Ghost = transparent, no border. Hover lighter (x1.14), press darker (x1.18), disabled 40% opacity, keyboard focus visible.
+- Device card: radius 0.8u, surface fill, 1px divider; tile left, then name (fontSizeLg bold), type (fontSize bold, category color), IP (fontSizeSm mono, textDim); footer: vendor + status chip. Hover: surfaceAlt fill, border = category color at 55%. Selected: selected fill + 2px accent border.
+- Sidebar item: height 2.0u, selected = accent at 20% fill + 4px accent marker + bold; counts in textDim.
+- Boxed section: sectionSurface, 1px sectionBorder, radius 0.5u, uppercase title, key/value rows (key 34% textDim, value text).
+- Inputs: height 2.1u, inputSurface fill, sectionBorder border, accent border on focus; search is a pill with a leading icon.
+- Dialog: dialogSurface, 1px dialogBorder, radius 0.8u, scrim behind it, Escape or scrim click closes, primary action on the right.
+- Hint bar: 1.9u footer; status text left, key caps right (1.2u high, 5px radius, text at 8% fill and 22% border).
+- Empty state: centered 5.2u tile with a soft pulsing halo, headline fontSizeXl bold, one sentence in textDim, one primary button.
+Icons: Fluent UI System Icons (MIT), filled variant, recolored at draw time with the theme color.
+
+BEHAVIOR
+Color transitions 90-110ms; card press scales to 98.5% over 80ms; toast fades 160ms and holds 2.6s. Motion never changes layout. Keyboard: arrows move through lists, plain-letter shortcuts are ignored while a text field has focus, and a hint bar teaches the keys. Layout collapses in two steps: the sidebar becomes icons-only below 1120px, then the detail panel narrows and the hint legend hides below 1000px.
+
+ACCESSIBILITY (improvements over the original, apply them)
+- Measured contrast: white text on the accent blue is 2.75:1 and on the Deck orange 2.65:1, which fails WCAG AA for normal text. Use onAccent (above) for primary and danger labels instead; #0e141b on #4a9eff is 6.72:1.
+- Light theme: category colors fail as 15px label text on white (Smart Home yellow is 1.9:1). Use the text color for labels and keep the category color on the glyph, or add darker light-theme variants.
+- Light-theme status chips (success, warning, danger on their 16% tint) reach only 3.0-4.0:1; darken those tones in the light theme.
+- Focus: use a 2px accent ring with a 2px offset on every focusable element.
+- Honor the OS reduce-motion setting; give interactive components accessible roles and names.
+- Check every NEW text/background pair you introduce: 4.5:1 for normal text, 3:1 for icons and large text.
+
+HOW TO WORK
+1. Ask which stack I use (web, Qt Quick, Flutter, SwiftUI, ...). Do not assume.
+2. Create the theme/token file first: all tokens above, three themes, the unit and scale, and a way to switch themes at runtime.
+3. Build the primitives next (Button, IconButton, Chip, IconTile, BoxedSection, Input, Dialog, HintBar), each reading only tokens.
+4. Then compose screens. Show me screenshots in dark, light and deck before calling anything done.
+5. Do not add shadows, gradients, extra accent colors, or color-only status. Status always has a word or an icon too.
+6. If something is not covered here, extend the system with the same rules (steps not shadows, one accent, unit multiples) and tell me what you added.

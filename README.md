@@ -139,3 +139,9 @@ missing two consecutive scans. Networks are tracked independently, and a stopped
 GUI: NEW / BACK / OFFLINE badges on the cards, a "New or back" and "Offline" filter in the sidebar, remembered-but-silent
 devices shown dimmed (toggle "Show offline"), and
 a summary in the status bar. Exports gain a "First seen" column; JSON has a `history` object per device.
+
+## Design language
+
+The visual system (tokens for the dark, light and Steam Deck themes, component specs, a contrast audit) is written up in
+[`docs/DESIGN_LANGUAGE.md`](docs/DESIGN_LANGUAGE.md); a ready-to-paste prompt for reusing it in another project is in
+[`docs/design-language-prompt.txt`](docs/design-language-prompt.txt). A test keeps the doc in step with `Theme.qml`.
