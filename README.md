@@ -48,3 +48,21 @@ probing (planned alongside the steamos-fm SMB integration).
 Tests run on Windows and in WSL (`Ubuntu-26.04`): `pytest` covers the `ip neigh` / `route print` / `arp -a` parsers
 with real output samples. WSL2 NAT only sees its own vNAT subnet, so LAN discovery on Linux needs real hardware
 (or `networkingMode=mirrored` in `.wslconfig`).
+
+## Custom rules
+
+Classification rules are data (`netscout/data/rules/*.toml`, packaged and strictly validated). To teach netscout
+about your own gear, drop files with the **same names** in your rules folder (`netscout --check-rules` prints its
+location and validates them; a bad rule is reported and skipped, never fatal):
+
+    # <rules dir>/vendor.toml  - regex on the OUI / UPnP manufacturer, votes are device-type -> weight (0..1)
+    [[rule]]
+    match = 'acme widgets'
+    votes = { pet_feeder = 0.9 }
+
+    # <rules dir>/services.toml - key is "<protocol>:<service>"; replaces the packaged entry of the same key
+    [services]
+    "mdns:_acme._tcp" = { pet_feeder = 0.95 }
+
+Files: `vendor`, `names` (hostnames/friendly names), `text` (banners, models, titles), `services`, `ports`, `os`.
+Weights for one type combine by noisy-OR; valid types are in `netscout/devtypes.py`.

@@ -1,0 +1,76 @@
+# Advertised-service rules. Keys are "<protocol>:<service>" as recorded by the discovery modules
+# (mdns:_ipp._tcp, upnp:mediarenderer, wsd:printdevicetype, ...). Same vote format as other rules.
+
+[services]
+'mdns:_airplay._tcp' = { tv = 0.3, streaming = 0.35, speaker = 0.25 }
+'mdns:_raop._tcp' = { speaker = 0.35, streaming = 0.15, computer = 0.1 }
+'mdns:_googlecast._tcp' = { streaming = 0.35, tv = 0.2, speaker = 0.2 }
+'mdns:_googlezone._tcp' = { speaker = 0.35 }
+'mdns:_spotify-connect._tcp' = { speaker = 0.5 }
+'mdns:_sonos._tcp' = { speaker = 0.95 }
+'mdns:_amzn-wplay._tcp' = { streaming = 0.85 }
+'mdns:_androidtvremote2._tcp' = { tv = 0.75, streaming = 0.2 }
+'mdns:_homekit._tcp' = { iot = 0.3 }
+'mdns:_hap._tcp' = { iot = 0.3 }
+'mdns:_matter._tcp' = { iot = 0.3, hub = 0.1 }
+'mdns:_matterc._udp' = { iot = 0.3 }
+'mdns:_meshcop._udp' = { hub = 0.3, router = 0.1 }
+'mdns:_eero._tcp' = { access_point = 0.8, router = 0.3 }
+'mdns:_hue._tcp' = { hub = 0.9, light = 0.2 }
+'mdns:_esphomelib._tcp' = { iot = 0.85 }
+'mdns:_nanoleafapi._tcp' = { light = 0.9 }
+'mdns:_printer._tcp' = { printer = 0.95 }
+'mdns:_ipp._tcp' = { printer = 0.9 }
+'mdns:_ipps._tcp' = { printer = 0.9 }
+'mdns:_pdl-datastream._tcp' = { printer = 0.95 }
+'mdns:_scanner._tcp' = { printer = 0.8 }
+'mdns:_uscan._tcp' = { printer = 0.7 }
+'mdns:_rtsp._tcp' = { camera = 0.45 }
+'mdns:_axis-video._tcp' = { camera = 0.95 }
+'mdns:_airport._tcp' = { access_point = 0.9, router = 0.3 }
+'mdns:_smb._tcp' = { computer = 0.25, nas = 0.25 }
+'mdns:_afpovertcp._tcp' = { nas = 0.3, computer = 0.2 }
+'mdns:_nfs._tcp' = { nas = 0.4, server = 0.2 }
+'mdns:_adisk._tcp' = { nas = 0.6 }
+'mdns:_workstation._tcp' = { computer = 0.35, server = 0.15 }
+'mdns:_ssh._tcp' = { server = 0.15, computer = 0.1 }
+'mdns:_sftp-ssh._tcp' = { server = 0.1 }
+'mdns:_companion-link._tcp' = { phone = 0.3, tablet = 0.2, laptop = 0.2, streaming = 0.15 }
+'mdns:_sleep-proxy._udp' = { streaming = 0.3, router = 0.2 }
+'mdns:_daap._tcp' = { media_server = 0.5, computer = 0.2 }
+'mdns:_dacp._tcp' = { computer = 0.2 }
+'mdns:_plexmediasvr._tcp' = { media_server = 0.95 }
+'mdns:_jellyfin._tcp' = { media_server = 0.9 }
+'mdns:_nvstream._tcp' = { computer = 0.55 }
+'mdns:_steam-link._tcp' = { computer = 0.3 }
+'mdns:_miracast._tcp' = { wireless_display = 0.9 }
+'mdns:_home-assistant._tcp' = { hub = 0.9, server = 0.2 }
+'mdns:_http._tcp' = {}
+'upnp:internetgatewaydevice' = { router = 0.9, gateway = 0.5 }
+'upnp:wandevice' = { router = 0.5, gateway = 0.4 }
+'upnp:wanconnectiondevice' = { router = 0.4, gateway = 0.3 }
+'upnp:wlanaccesspointdevice' = { access_point = 0.75 }
+'upnp:wfadevice' = { access_point = 0.5, router = 0.2 }
+'upnp:mediaserver' = { media_server = 0.75, nas = 0.2 }
+'upnp:mediarenderer' = { speaker = 0.3, tv = 0.3, streaming = 0.25 }
+'upnp:zoneplayer' = { speaker = 0.95 }
+'upnp:printer' = { printer = 0.9 }
+'upnp:printerbasic' = { printer = 0.9 }
+'upnp:dial' = { tv = 0.35, streaming = 0.35 }
+'upnp:basic' = { iot = 0.1 }
+'upnp:digitalsecuritycamera' = { camera = 0.9 }
+'upnp:hvac' = { thermostat = 0.6 }
+'upnp:binarylight' = { light = 0.8 }
+'upnp:dimmablelight' = { light = 0.85 }
+'upnp:lightingcontrols' = { light = 0.6 }
+'upnp:controllee' = { smart_plug = 0.85 }
+'upnp:bridge' = { hub = 0.5 }
+'upnp:sensor' = { iot = 0.5 }
+'wsd:networkvideotransmitter' = { camera = 0.9 }
+'wsd:printdevicetype' = { printer = 0.9 }
+'wsd:printerservice' = { printer = 0.9 }
+'wsd:scandevice' = { printer = 0.6 }
+'wsd:computer' = { computer = 0.55 }
+'wsd:device' = { iot = 0.05 }
+'netbios:nbstat' = { computer = 0.3 }
+'local:self' = { computer = 0.4 }

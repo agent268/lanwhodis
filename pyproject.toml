@@ -28,7 +28,7 @@ netscout-gui = "netscout.gui.app:main"
 include = ["netscout*"]
 
 [tool.setuptools.package-data]
-netscout = ["data/*"]
+netscout = ["data/*", "data/rules/*.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -9,13 +9,18 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 
-from ..classify import _PORT
+from .. import rules
 from ..model import Device
 import sys
 
 from .base import ScanContext, run_cmd
 
-PROBE_PORTS = sorted(set(_PORT) | {80, 443, 8080, 8443})
+
+
+def probe_ports() -> list[int]:
+    return sorted(set(rules.get().ports) | {80, 443, 8080, 8443})
+
+
 HTTP_PORTS = (80, 8080, 443, 8443, 5000, 8000)
 _PORT_RANK = {80: 3, 443: 4, 8080: 5, 8443: 6, 5000: 7, 8000: 8}   # preference among probed web ports
 _TITLE = re.compile(r"<title[^>]*>\s*([^<]{1,100}?)\s*</title>", re.I)
@@ -33,7 +38,7 @@ def _open(ip: str, port: int, timeout: float) -> bool:
 
 
 def scan_ports(ctx: ScanContext, devices: list[Device], timeout: float = 0.7) -> None:
-    jobs = [(d, p) for d in devices for p in PROBE_PORTS]
+    jobs = [(d, p) for d in devices for p in probe_ports()]
     done = 0
 
     def work(job: tuple[Device, int]) -> None:

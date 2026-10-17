@@ -1,0 +1,218 @@
+# Hostname / friendly-name rules: regex searched (case-insensitive) in every name a device reports
+# (DHCP/DNS hostname, mDNS instance, UPnP friendlyName, NetBIOS, ...).
+
+[[rule]]
+match = 'iphone'
+votes = { phone = 0.92 }
+
+[[rule]]
+match = 'ipad'
+votes = { tablet = 0.92 }
+
+[[rule]]
+match = 'macbook'
+votes = { laptop = 0.92 }
+
+[[rule]]
+match = 'imac|mac-?mini|mac-?studio|mac-?pro'
+votes = { computer = 0.85 }
+
+[[rule]]
+match = 'apple-?tv|appletv'
+votes = { streaming = 0.92 }
+
+[[rule]]
+match = 'homepod'
+votes = { speaker = 0.95 }
+
+[[rule]]
+match = 'galaxy-?(tab|s\d+ ?tab)|^sm-t\d'
+votes = { tablet = 0.8 }
+
+[[rule]]
+match = 'galaxy|^sm-[a-z]\d'
+votes = { phone = 0.6 }
+
+[[rule]]
+match = 'pixel-?\d'
+votes = { phone = 0.8 }
+
+[[rule]]
+match = 'oneplus|redmi|xiaomi|poco-'
+votes = { phone = 0.55 }
+
+[[rule]]
+match = 'android'
+votes = { phone = 0.45, tablet = 0.15 }
+
+[[rule]]
+match = 'kindle|fire-?(hd|tablet)'
+votes = { tablet = 0.8 }
+
+[[rule]]
+match = 'firetv|fire-?tv|^aft[a-z]'
+votes = { streaming = 0.9 }
+
+[[rule]]
+match = '(^|[-_ .])echo|alexa'
+votes = { speaker = 0.75 }
+
+[[rule]]
+match = 'google-?home|nest-?(mini|audio|hub)|home-?mini'
+votes = { speaker = 0.8 }
+
+[[rule]]
+match = 'chromecast'
+votes = { streaming = 0.95 }
+
+[[rule]]
+match = '^desktop-|^pc-|-pc$|^win-|^workstation'
+votes = { computer = 0.6 }
+
+[[rule]]
+match = 'laptop|notebook|thinkpad|latitude|\bxps\b|surface|^dell-|^lenovo-'
+votes = { laptop = 0.6 }
+
+[[rule]]
+match = 'vivobook|zenbook|expertbook|rog-?(zephyrus|flow|strix)|ideapad|yoga|inspiron|pavilion|spectre|elitebook|probook|envy-?x360|galaxy-?book|aspire|swift-?\d|predator|helios|triton|nitro-?\d|omen-|alienware|legion|macbook|chromebook'
+votes = { laptop = 0.8 }
+
+[[rule]]
+match = '(^|[-_ .])(arm64|aarch64|x64|x86|amd64|win(dows)?-?(arm|11|10))([-_ .0-9]|$)'
+votes = { computer = 0.55 }
+
+[[rule]]
+match = 'raspberrypi|^pi\d|-pi$|^rpi|^pi-'
+votes = { raspberry_pi = 0.85 }
+
+[[rule]]
+match = 'steam-?deck'
+votes = { handheld_console = 0.98 }
+
+[[rule]]
+match = 'xbox'
+votes = { game_console = 0.95 }
+
+[[rule]]
+match = 'playstation|^ps[345](-|$)'
+votes = { game_console = 0.95 }
+
+[[rule]]
+match = 'nintendo|^switch$|nintendoswitch'
+votes = { handheld_console = 0.8, game_console = 0.3 }
+
+[[rule]]
+match = '^roku'
+votes = { streaming = 0.9 }
+
+[[rule]]
+match = 'printer|^brw|^npi[0-9a-f]|^epson|^canon|laserjet|officejet|deskjet|envy-|^hp[0-9a-f]{6}'
+votes = { printer = 0.8 }
+
+[[rule]]
+match = 'ipcam|^ipc-|webcam|(^|[-_ ])cam(era)?([-_ 0-9]|$)'
+votes = { camera = 0.65 }
+
+[[rule]]
+match = 'doorbell'
+votes = { doorbell = 0.9 }
+
+[[rule]]
+match = '^ring-'
+votes = { doorbell = 0.6 }
+
+[[rule]]
+match = 'thermostat'
+votes = { thermostat = 0.9 }
+
+[[rule]]
+match = 'garage|myq'
+votes = { garage_door = 0.8 }
+
+[[rule]]
+match = 'water-?heater|rheem'
+votes = { water_heater = 0.8 }
+
+[[rule]]
+match = 'washer|dryer|washing|dishwasher|fridge|refrigerator|(^|[-_ ])oven|robovac|roomba|vacuum'
+votes = { appliance = 0.75 }
+
+[[rule]]
+match = 'feeder|petlibro|petsafe'
+votes = { pet_feeder = 0.85 }
+
+[[rule]]
+match = 'lg-?webos|lgwebostv|webos|\[lg\]'
+votes = { tv = 0.85 }
+
+[[rule]]
+match = 'bravia|smart-?tv|samsung-?tv|\[tv\]|tizen|vizio|^tcl|(^|[-_ .])tv([-_ .0-9]|$)'
+votes = { tv = 0.65 }
+
+[[rule]]
+match = '^esp[-_]?[0-9a-f]+|esp32|esp8266|tasmota|wled|shelly|espressif'
+votes = { iot = 0.75 }
+
+[[rule]]
+match = 'homeassistant|hassio'
+votes = { hub = 0.85, server = 0.3 }
+
+[[rule]]
+match = 'pi-?hole'
+votes = { server = 0.5 }
+
+[[rule]]
+match = '(^|[-_])hub([-_]|$)'
+votes = { hub = 0.5 }
+
+[[rule]]
+match = 'smartplug|outlet|(^|[-_ ])plug|hs1[01]0|kp\d{3}'
+votes = { smart_plug = 0.6 }
+
+[[rule]]
+match = 'bulb|lamp|(^|[-_ ])hue|lifx'
+votes = { light = 0.55 }
+
+[[rule]]
+match = 'diskstation|synology|qnap|(^|[-_ ])nas([-_ 0-9]|$)'
+votes = { nas = 0.8 }
+
+[[rule]]
+match = '^usw|switch'
+votes = { switch = 0.5 }
+
+[[rule]]
+match = '^uap|^u6-|(^|[-_ ])ap([-_ ]?\d|$)|accesspoint|(^|[-_ ])wap([-_ ]|$)'
+votes = { access_point = 0.6 }
+
+[[rule]]
+match = 'extender|repeater|^rex|wn\d{4}ex'
+votes = { extender = 0.7 }
+
+[[rule]]
+match = 'router|gateway|^rt-|openwrt|dd-wrt|pfsense|opnsense|mikrotik|edgerouter|fritz\.?box|^ac\d{4}'
+votes = { router = 0.55 }
+
+[[rule]]
+match = 'ubuntu|debian|fedora|linux|server|(^|[-_])srv|^vm-?|proxmox|esxi|docker|k8s|node\d'
+votes = { server = 0.45 }
+
+[[rule]]
+match = 'phone|^moto|motorola'
+votes = { phone = 0.4 }
+
+[[rule]]
+match = 'tablet|^tab[-_ 0-9]'
+votes = { tablet = 0.5 }
+
+[[rule]]
+match = 'projector|miracast|screenbeam|airtame'
+votes = { wireless_display = 0.8 }
+
+[[rule]]
+match = 'signage|brightsign'
+votes = { signage = 0.85 }
+
+[[rule]]
+match = 'voip|sip-|yealink|polycom'
+votes = { voip = 0.8 }

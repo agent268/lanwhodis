@@ -1,0 +1,243 @@
+# Vendor rules: regex searched (case-insensitive) in the OUI / UPnP manufacturer string.
+# `votes` maps device type -> weight (0..1). Weights for the same type combine by noisy-OR.
+# Device types are listed in netscout/devtypes.py.
+
+[[rule]]
+match = 'raspberry pi'
+votes = { raspberry_pi = 0.9 }
+
+[[rule]]
+match = '\bsonos\b'
+votes = { speaker = 0.95 }
+
+[[rule]]
+match = '\broku\b'
+votes = { streaming = 0.9 }
+
+[[rule]]
+match = 'nintendo'
+votes = { handheld_console = 0.4, game_console = 0.6 }
+
+[[rule]]
+match = 'sony interactive'
+votes = { game_console = 0.92 }
+
+[[rule]]
+match = 'valve corp'
+votes = { handheld_console = 0.5, game_console = 0.3, computer = 0.2 }
+
+[[rule]]
+match = 'ayaneo|anbernic|retroid|\bayn\b|\bgpd\b|powkiddy'
+votes = { handheld_console = 0.7 }
+
+[[rule]]
+match = 'espressif'
+votes = { iot = 0.7, smart_plug = 0.15 }
+
+[[rule]]
+match = 'tuya'
+votes = { iot = 0.8, smart_plug = 0.2 }
+
+[[rule]]
+match = 'ubiquiti|ubnt'
+votes = { access_point = 0.4, switch = 0.15, router = 0.15 }
+
+[[rule]]
+match = 'tp-?link'
+votes = { router = 0.3, access_point = 0.25, smart_plug = 0.12, extender = 0.1 }
+
+[[rule]]
+match = 'netgear'
+votes = { router = 0.35, access_point = 0.2, extender = 0.15 }
+
+[[rule]]
+match = '\barlo\b'
+votes = { camera = 0.85 }
+
+[[rule]]
+match = '\basus(tek)?\b'
+votes = { router = 0.25, computer = 0.25, laptop = 0.15 }
+
+[[rule]]
+match = 'linksys|tenda|mercusys|totolink|cudy|wavlink|engenius|edimax|zyxel|trendnet|d-?link'
+votes = { router = 0.35, access_point = 0.25, switch = 0.1 }
+
+[[rule]]
+match = 'mikrotik|routerboard'
+votes = { router = 0.75 }
+
+[[rule]]
+match = 'cisco|meraki'
+votes = { switch = 0.35, router = 0.3, access_point = 0.2 }
+
+[[rule]]
+match = 'aruba|ruckus|cambium|aerohive|extreme networks'
+votes = { access_point = 0.75 }
+
+[[rule]]
+match = '\beero\b'
+votes = { router = 0.5, access_point = 0.4 }
+
+[[rule]]
+match = 'avm|fritz'
+votes = { router = 0.75 }
+
+[[rule]]
+match = 'devolo'
+votes = { extender = 0.6 }
+
+[[rule]]
+match = 'arcadyan|arris|technicolor|sagemcom|commscope|ubee|hitron|askey|sercomm|actiontec|calix|zte|fiberhome|zhone'
+votes = { gateway = 0.5, router = 0.3 }
+
+[[rule]]
+match = 'teltonika|peplink|cradlepoint|inseego|sierra wireless'
+votes = { router = 0.6 }
+
+[[rule]]
+match = 'nest labs'
+votes = { thermostat = 0.5, camera = 0.3, doorbell = 0.15 }
+
+[[rule]]
+match = 'google'
+votes = { speaker = 0.2, streaming = 0.2, hub = 0.1, phone = 0.1 }
+
+[[rule]]
+match = 'amazon'
+votes = { speaker = 0.3, streaming = 0.3, tablet = 0.15 }
+
+[[rule]]
+match = 'ring (llc|inc)|^ring\b'
+votes = { doorbell = 0.6, camera = 0.3 }
+
+[[rule]]
+match = '\bblink\b|wyze|reolink|hikvision|dahua|amcrest|foscam|axis comm|vivotek|hanwha|uniview|lorex|swann|zhejiang uniview|annke|eufy|tapo|yi technology|imou|ezviz|arlo'
+votes = { camera = 0.85 }
+
+[[rule]]
+match = 'ecobee|tado|netatmo'
+votes = { thermostat = 0.85 }
+
+[[rule]]
+match = 'honeywell|emerson|resideo'
+votes = { thermostat = 0.4 }
+
+[[rule]]
+match = 'chamberlain|liftmaster|myq|genie company|overhead door'
+votes = { garage_door = 0.8 }
+
+[[rule]]
+match = 'rheem|a\.? ?o\.? smith|bradford white|navien|rinnai|bosch thermotechnik'
+votes = { water_heater = 0.6 }
+
+[[rule]]
+match = 'whirlpool|electrolux|\bbsh\b|miele|haier|midea|ge appliances|maytag|bosch hausger'
+votes = { appliance = 0.55 }
+
+[[rule]]
+match = 'irobot|roborock|ecovacs|dreame|neato|shark ?ninja|sharkninja'
+votes = { appliance = 0.8 }
+
+[[rule]]
+match = '\blg elec'
+votes = { tv = 0.35, appliance = 0.25, phone = 0.1 }
+
+[[rule]]
+match = 'samsung'
+votes = { phone = 0.2, tv = 0.25, appliance = 0.15, tablet = 0.1 }
+
+[[rule]]
+match = 'petlibro|petsafe|whisker|litter-?robot|petkit|wopet|sure petcare|dogness|petwant'
+votes = { pet_feeder = 0.75 }
+
+[[rule]]
+match = 'signify|philips lighting|lifx|nanoleaf|yeelight|\bwiz\b|innr|lutron'
+votes = { light = 0.6, hub = 0.15 }
+
+[[rule]]
+match = 'hubitat|smartthings|aeotec|zigbee|z-wave|sigma designs|zwave|control4|crestron|savant'
+votes = { hub = 0.55 }
+
+[[rule]]
+match = 'belkin|wemo'
+votes = { smart_plug = 0.45, router = 0.15 }
+
+[[rule]]
+match = 'sonoff|itead|shelly|allterco|meross|gosund|teckin|athom|kasa'
+votes = { smart_plug = 0.75, iot = 0.1 }
+
+[[rule]]
+match = 'enphase|sma solar|solaredge|generac|sense labs'
+votes = { iot = 0.7 }
+
+[[rule]]
+match = 'bambu|creality|prusa|elegoo'
+votes = { iot = 0.5, printer = 0.2 }
+
+[[rule]]
+match = 'apple'
+votes = { computer = 0.12, phone = 0.12, laptop = 0.1, tablet = 0.08, tv = 0.05 }
+
+[[rule]]
+match = 'nvidia'
+votes = { streaming = 0.3, computer = 0.25 }
+
+[[rule]]
+match = 'intel corp|dell|lenovo|hp inc|acer|micro-star|\bmsi\b|gigabyte|asrock|clevo|framework|compal|quanta|wistron|liteon|azurewave|chicony|realtek'
+votes = { computer = 0.3, laptop = 0.15 }
+
+[[rule]]
+match = 'vmware|virtualbox|pcs systems|xensource|parallels'
+votes = { server = 0.5, computer = 0.2 }
+
+[[rule]]
+match = 'xiaomi'
+votes = { phone = 0.25, iot = 0.3 }
+
+[[rule]]
+match = 'huawei'
+votes = { phone = 0.25, router = 0.2 }
+
+[[rule]]
+match = 'oneplus|oppo|vivo mobile|motorola|realme|nothing tech|tecno|infinix|fairphone|hmd'
+votes = { phone = 0.5 }
+
+[[rule]]
+match = 'vizio|hisense|tcl|skyworth|toshiba (visual|digital)|panasonic|sharp|philips consumer|funai|bang & olufsen|konka|changhong|sceptre'
+votes = { tv = 0.5 }
+
+[[rule]]
+match = '\bsony\b'
+votes = { tv = 0.3, speaker = 0.1, game_console = 0.1, phone = 0.1 }
+
+[[rule]]
+match = 'brother|canon|epson|lexmark|xerox|ricoh|kyocera|konica|oki data|zebra tech|dymo|seiko epson'
+votes = { printer = 0.65 }
+
+[[rule]]
+match = 'hewlett|hp inc'
+votes = { printer = 0.35, computer = 0.3, laptop = 0.15 }
+
+[[rule]]
+match = 'synology|qnap|asustor|terramaster|buffalo|drobo|netgear readynas|western digital|\bwd\b'
+votes = { nas = 0.75 }
+
+[[rule]]
+match = 'polycom|yealink|grandstream|snom|avaya|mitel|fanvil|obihai|ooma|poly\b|ringcentral'
+votes = { voip = 0.8 }
+
+[[rule]]
+match = 'denon|marantz|yamaha|bose|harman|\bjbl\b|klipsch|polk|libratone|teufel|onkyo|pioneer|bowers|naim|bluesound|heos|wiim|linkplay|cambridge audio'
+votes = { speaker = 0.5 }
+
+[[rule]]
+match = 'airtame|mersive|screenbeam|ezcast|measy|barco clickshare|clickshare'
+votes = { wireless_display = 0.85 }
+
+[[rule]]
+match = 'brightsign|iadea|appspace|novastar|scala'
+votes = { signage = 0.85 }
+
+[[rule]]
+match = 'dell emc|supermicro|super micro|inspur|ibm|oracle|fujitsu'
+votes = { server = 0.5 }

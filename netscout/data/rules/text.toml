@@ -1,0 +1,202 @@
+# Free-text rules: regex searched in model strings, UPnP/HTTP Server headers, HTTP <title>,
+# SSH/RTSP banners and other captured text.
+
+[[rule]]
+match = 'iphone\d+,\d+'
+votes = { phone = 0.98 }
+
+[[rule]]
+match = 'ipad\d+,\d+'
+votes = { tablet = 0.98 }
+
+[[rule]]
+match = 'macbook'
+votes = { laptop = 0.95 }
+
+[[rule]]
+match = 'macmini|imac|macpro|macstudio'
+votes = { computer = 0.9 }
+
+[[rule]]
+match = 'appletv\d'
+votes = { streaming = 0.98 }
+
+[[rule]]
+match = 'audioaccessory'
+votes = { speaker = 0.98 }
+
+[[rule]]
+match = '\broku\b'
+votes = { streaming = 0.9 }
+
+[[rule]]
+match = 'xbox'
+votes = { game_console = 0.95 }
+
+[[rule]]
+match = 'playstation'
+votes = { game_console = 0.95 }
+
+[[rule]]
+match = 'nintendo'
+votes = { handheld_console = 0.5, game_console = 0.3 }
+
+[[rule]]
+match = 'steam ?deck|jupiter'
+votes = { handheld_console = 0.9 }
+
+[[rule]]
+match = 'chromecast'
+votes = { streaming = 0.95 }
+
+[[rule]]
+match = 'nest (mini|audio|hub)|home (mini|max)|google home|lenovo ?(cd|smart (clock|display))|smart clock'
+votes = { speaker = 0.93 }
+
+[[rule]]
+match = 'nest wifi|nest ?wifi point'
+votes = { access_point = 0.8, router = 0.3 }
+
+[[rule]]
+match = 'google tv|android tv|androidtv|bravia|webos|tizen|smart ?tv|vizio|hisense|\btcl\b'
+votes = { tv = 0.7 }
+
+[[rule]]
+match = 'fire ?tv'
+votes = { streaming = 0.9 }
+
+[[rule]]
+match = 'apple ?tv'
+votes = { streaming = 0.95 }
+
+[[rule]]
+match = 'homepod'
+votes = { speaker = 0.95 }
+
+[[rule]]
+match = 'echo (dot|show|studio|pop)|alexa'
+votes = { speaker = 0.75 }
+
+[[rule]]
+match = 'sonos'
+votes = { speaker = 0.95 }
+
+[[rule]]
+match = 'hue bridge|philips hue'
+votes = { hub = 0.85 }
+
+[[rule]]
+match = 'internetgatewaydevice|wanipconnection'
+votes = { router = 0.9 }
+
+[[rule]]
+match = 'hikvision|dahua|reolink|amcrest|foscam|ip ?camera|network camera|onvif|\bdvr\b|\bnvr\b|webcam'
+votes = { camera = 0.8 }
+
+[[rule]]
+match = 'printer|laserjet|officejet|deskjet|inkjet|\bmfp\b|laserwriter|ecotank|pixma'
+votes = { printer = 0.9 }
+
+[[rule]]
+match = 'synology|diskstation|qnap|readynas'
+votes = { nas = 0.9 }
+
+[[rule]]
+match = 'truenas|unraid|openmediavault|freenas'
+votes = { nas = 0.6, server = 0.3 }
+
+[[rule]]
+match = 'plex media server|plex'
+votes = { media_server = 0.9 }
+
+[[rule]]
+match = 'jellyfin|emby|minidlna|serviio|mediatomb|gerbera|universal media server|twonky'
+votes = { media_server = 0.85 }
+
+[[rule]]
+match = '\bkodi\b'
+votes = { media_server = 0.5, computer = 0.2 }
+
+[[rule]]
+match = 'mediaserver'
+votes = { media_server = 0.6 }
+
+[[rule]]
+match = 'openwrt|dd-wrt|tomato|pfsense|opnsense|routeros|edgeos|mikrotik|asuswrt|fritz!?box'
+votes = { router = 0.8 }
+
+[[rule]]
+match = 'unifi|access point|wireless-ap'
+votes = { access_point = 0.6 }
+
+[[rule]]
+match = 'managed switch|poe switch|gigabit switch|smart switch|ethernet switch'
+votes = { switch = 0.8 }
+
+[[rule]]
+match = 'extender|repeater'
+votes = { extender = 0.7 }
+
+[[rule]]
+match = 'raspberry|raspbian|raspios'
+votes = { raspberry_pi = 0.8 }
+
+[[rule]]
+match = 'home assistant'
+votes = { hub = 0.9 }
+
+[[rule]]
+match = 'thermostat'
+votes = { thermostat = 0.9 }
+
+[[rule]]
+match = 'doorbell'
+votes = { doorbell = 0.9 }
+
+[[rule]]
+match = 'garage'
+votes = { garage_door = 0.6 }
+
+[[rule]]
+match = 'water heater|waterheater'
+votes = { water_heater = 0.8 }
+
+[[rule]]
+match = 'dishwasher|washer|dryer|refrigerator|robot vacuum|roomba'
+votes = { appliance = 0.75 }
+
+[[rule]]
+match = 'pet feeder|petlibro|pet-feeder'
+votes = { pet_feeder = 0.9 }
+
+[[rule]]
+match = 'miracast|wireless display|airtame|screenbeam|wifi display'
+votes = { wireless_display = 0.8 }
+
+[[rule]]
+match = 'signage|brightsign|digital sign'
+votes = { signage = 0.85 }
+
+[[rule]]
+match = 'ip phone|voip|sip phone|yealink|polycom|grandstream'
+votes = { voip = 0.8 }
+
+[[rule]]
+match = 'esphome|tasmota|wled|shelly'
+votes = { iot = 0.75 }
+
+[[rule]]
+match = 'vmware|esxi|proxmox|hyper-v'
+votes = { server = 0.5 }
+
+[[rule]]
+match = 'dropbear'
+votes = { router = 0.3, iot = 0.2 }
+
+[[rule]]
+match = 'openssh'
+votes = { server = 0.15, computer = 0.1 }
+
+[[rule]]
+match = 'windows|microsoft-httpapi|microsoft-iis'
+votes = { computer = 0.3 }

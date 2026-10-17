@@ -6,7 +6,7 @@ import signal
 import sys
 import threading
 
-from . import __version__, export, scanner
+from . import __version__, export, paths, rules, scanner
 from .discovery import net
 
 
@@ -25,6 +25,8 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--include-virtual", action="store_true",
                    help="also scan Hyper-V/WSL/Docker/VPN adapters (hidden by default)")
     p.add_argument("--list-interfaces", action="store_true", help="show scannable interfaces and exit")
+    p.add_argument("--check-rules", action="store_true",
+                   help="validate your custom rules (see README, 'Custom rules') and exit")
     p.add_argument("--no-ports", action="store_true", help="skip TCP port probing (faster, quieter)")
     p.add_argument("-t", "--timeout", type=float, default=4.0,
                    help="seconds to listen for mDNS/SSDP/WSD replies (default 4)")
@@ -37,6 +39,15 @@ def main(argv: list[str] | None = None) -> int:
     for s in (sys.stdout, sys.stderr):
         s.reconfigure(encoding="utf-8", errors="replace")
     args = _parser().parse_args(argv)
+    if args.check_rules:
+        rs = rules.reload()
+        print(f"rules dir: {paths.rules_dir()}")
+        print(f"loaded {len(rs.vendor)} vendor, {len(rs.names)} name, {len(rs.text)} text, "
+              f"{len(rs.services)} service, {len(rs.ports)} port, {len(rs.os_text)} OS-text rules")
+        for e in rs.errors:
+            print(f"  error: {e}")
+        print("OK" if not rs.errors else f"{len(rs.errors)} problem(s); those rules were skipped")
+        return 1 if rs.errors else 0
     ifaces = net.list_interfaces(args.include_virtual)
 
     if args.list_interfaces:

@@ -1,0 +1,478 @@
+# OS detection rules. See osdetect.py for how votes are combined.
+
+# --- text rules: regex in banners/UPnP/model/name text -> OS family (+ optional detail; \1 = capture) ---
+
+[[text]]
+match = '^local-os: windows'
+family = 'Windows'
+weight = 0.99
+
+[[text]]
+match = '^local-os: darwin'
+family = 'macOS'
+weight = 0.99
+
+[[text]]
+match = '^local-os: linux \| (.+)'
+family = 'Linux'
+detail = '\1'
+weight = 0.99
+
+[[text]]
+match = '^local-os: linux \|.*steamos'
+family = 'Linux'
+detail = 'SteamOS'
+weight = 0.995
+
+[[text]]
+match = '^local-os: linux'
+family = 'Linux'
+weight = 0.99
+
+[[text]]
+match = 'openssh_for_windows'
+family = 'Windows'
+weight = 0.95
+
+[[text]]
+match = 'openssh[\w.]* ubuntu'
+family = 'Linux'
+detail = 'Ubuntu'
+weight = 0.9
+
+[[text]]
+match = 'openssh[\w.]* debian|openssh[\w.]* \+deb'
+family = 'Linux'
+detail = 'Debian'
+weight = 0.9
+
+[[text]]
+match = 'raspbian|raspios|raspberry pi os'
+family = 'Linux'
+detail = 'Raspberry Pi OS'
+weight = 0.9
+
+[[text]]
+match = 'openssh[\w.]* freebsd|freebsd'
+family = 'FreeBSD'
+weight = 0.85
+
+[[text]]
+match = 'openssh[\w.]* openbsd'
+family = 'OpenBSD'
+weight = 0.85
+
+[[text]]
+match = 'dropbear'
+family = 'Linux'
+detail = 'embedded (Dropbear)'
+weight = 0.5
+
+[[text]]
+match = 'openssh[_ ]([\d.]+)'
+family = 'Linux'
+weight = 0.25
+
+[[text]]
+match = 'microsoft-windows/(\d+\.\d+)'
+family = 'Windows'
+detail = 'NT \1'
+weight = 0.95
+
+[[text]]
+match = 'microsoft-(httpapi|iis)|\bwin(32|64)\b'
+family = 'Windows'
+weight = 0.8
+
+[[text]]
+match = '\bwindows\b'
+family = 'Windows'
+weight = 0.4
+
+[[text]]
+match = 'linux/(\d+\.\d+(?:\.\d+)?)'
+family = 'Linux'
+detail = 'kernel \1'
+weight = 0.8
+
+[[text]]
+match = '\blinux\b|\bubuntu\b|\bdebian\b|\bfedora\b'
+family = 'Linux'
+weight = 0.6
+
+[[text]]
+match = 'uhttpd|openwrt'
+family = 'OpenWrt'
+weight = 0.9
+
+[[text]]
+match = 'lighttpd|boa/|goahead|mini_httpd|thttpd|micro_httpd|mbedthis|rompager'
+family = 'Linux'
+detail = 'embedded'
+weight = 0.45
+
+[[text]]
+match = 'darwin|mac ?os ?x|macos'
+family = 'macOS'
+weight = 0.85
+
+[[text]]
+match = 'macbook|macmini|imac|macpro|macstudio'
+family = 'macOS'
+weight = 0.9
+
+[[text]]
+match = 'iphone\d+,\d+'
+family = 'iOS'
+weight = 0.97
+
+[[text]]
+match = 'ipad\d+,\d+'
+family = 'iPadOS'
+weight = 0.97
+
+[[text]]
+match = 'appletv\d'
+family = 'tvOS'
+weight = 0.97
+
+[[text]]
+match = 'audioaccessory'
+family = 'audioOS'
+detail = 'HomePod'
+weight = 0.95
+
+[[text]]
+match = '\bandroid ?tv|google tv'
+family = 'Android'
+detail = 'TV'
+weight = 0.85
+
+[[text]]
+match = 'fire ?tv|\baft[a-z]'
+family = 'Fire OS'
+weight = 0.85
+
+[[text]]
+match = '\bandroid\b'
+family = 'Android'
+weight = 0.7
+
+[[text]]
+match = '\broku\b'
+family = 'Roku OS'
+weight = 0.92
+
+[[text]]
+match = 'webos|lgwebostv'
+family = 'webOS'
+weight = 0.92
+
+[[text]]
+match = 'tizen'
+family = 'Tizen'
+weight = 0.92
+
+[[text]]
+match = 'steam ?deck|steamos'
+family = 'Linux'
+detail = 'SteamOS'
+weight = 0.85
+
+[[text]]
+match = 'xbox'
+family = 'Xbox OS'
+weight = 0.85
+
+[[text]]
+match = 'playstation|\bps[345]\b'
+family = 'PlayStation OS'
+weight = 0.8
+
+[[text]]
+match = 'routeros|mikrotik'
+family = 'RouterOS'
+weight = 0.92
+
+[[text]]
+match = 'edgeos|edgerouter'
+family = 'EdgeOS'
+weight = 0.9
+
+[[text]]
+match = 'esxi|vmware esx'
+family = 'ESXi'
+weight = 0.92
+
+[[text]]
+match = 'diskstation|synology|dsm'
+family = 'DSM'
+weight = 0.8
+
+[[text]]
+match = 'truenas|freenas'
+family = 'FreeBSD'
+detail = 'TrueNAS'
+weight = 0.7
+
+[[text]]
+match = 'pfsense|opnsense'
+family = 'FreeBSD'
+detail = 'firewall distro'
+weight = 0.85
+
+[[text]]
+match = 'home assistant|hassio'
+family = 'Linux'
+detail = 'Home Assistant OS'
+weight = 0.7
+
+[[text]]
+match = 'esphome|tasmota|wled|esp32|esp8266'
+family = 'Embedded'
+detail = 'ESP firmware'
+weight = 0.85
+
+# --- port signatures ---
+
+[[port]]
+port = 3389
+family = 'Windows'
+weight = 0.5
+
+[[port]]
+port = 135
+family = 'Windows'
+weight = 0.5
+
+[[port]]
+port = 5985
+family = 'Windows'
+weight = 0.4
+
+[[port]]
+port = 62078
+family = 'iOS'
+weight = 0.9
+
+[[port]]
+port = 5555
+family = 'Android'
+weight = 0.5
+
+[[port]]
+port = 548
+family = 'macOS'
+weight = 0.4
+
+[[port]]
+port = 8060
+family = 'Roku OS'
+weight = 0.9
+
+[[port]]
+port = 8291
+family = 'RouterOS'
+weight = 0.2
+
+# --- vendor (OUI) hints ---
+
+[[vendor]]
+match = 'raspberry pi'
+family = 'Linux'
+detail = 'Raspberry Pi OS'
+weight = 0.5
+
+[[vendor]]
+match = 'valve corp'
+family = 'Linux'
+detail = 'SteamOS'
+weight = 0.35
+
+[[vendor]]
+match = 'espressif'
+family = 'Embedded'
+detail = 'ESP firmware'
+weight = 0.5
+
+[[vendor]]
+match = 'microsoft'
+family = 'Windows'
+weight = 0.15
+
+[[vendor]]
+match = '\broku\b'
+family = 'Roku OS'
+weight = 0.8
+
+[[vendor]]
+match = 'mikrotik|routerboard'
+family = 'RouterOS'
+weight = 0.8
+
+[[vendor]]
+match = 'synology'
+family = 'DSM'
+weight = 0.6
+
+[[vendor]]
+match = 'vmware'
+family = 'ESXi'
+weight = 0.2
+
+# --- ICMP TTL (family-level only; initial TTL bucket -> OS votes) ---
+
+[ttl."64"]
+'Linux' = 0.2
+'macOS' = 0.15
+'iOS' = 0.15
+'Android' = 0.15
+'FreeBSD' = 0.1
+
+[ttl."128"]
+'Windows' = 0.5
+
+[ttl."255"]
+'Embedded' = 0.2
+'FreeBSD' = 0.1
+
+# --- what an OS implies about the device type (scaled by OS confidence) ---
+
+[[type_votes]]
+family = 'Windows'
+votes = { computer = 0.4, laptop = 0.05 }
+
+[[type_votes]]
+family = 'macOS'
+votes = { computer = 0.45, laptop = 0.2 }
+
+[[type_votes]]
+family = 'iOS'
+votes = { phone = 0.6, tablet = 0.2 }
+
+[[type_votes]]
+family = 'iPadOS'
+votes = { tablet = 0.9 }
+
+[[type_votes]]
+family = 'tvOS'
+votes = { streaming = 0.9 }
+
+[[type_votes]]
+family = 'audioOS'
+votes = { speaker = 0.9 }
+
+[[type_votes]]
+family = 'Android'
+votes = { phone = 0.4, tablet = 0.12, tv = 0.1 }
+
+[[type_votes]]
+family = 'Android'
+detail = 'TV'
+votes = { tv = 0.6, streaming = 0.3 }
+
+[[type_votes]]
+family = 'Fire OS'
+votes = { streaming = 0.5, tv = 0.3, tablet = 0.15 }
+
+[[type_votes]]
+family = 'Roku OS'
+votes = { streaming = 0.9 }
+
+[[type_votes]]
+family = 'webOS'
+votes = { tv = 0.9 }
+
+[[type_votes]]
+family = 'Tizen'
+votes = { tv = 0.85 }
+
+[[type_votes]]
+family = 'Xbox OS'
+votes = { game_console = 0.9 }
+
+[[type_votes]]
+family = 'PlayStation OS'
+votes = { game_console = 0.9 }
+
+[[type_votes]]
+family = 'Linux'
+detail = 'SteamOS'
+votes = { handheld_console = 0.5, computer = 0.2 }
+
+[[type_votes]]
+family = 'Linux'
+detail = 'Raspberry Pi OS'
+votes = { raspberry_pi = 0.6 }
+
+[[type_votes]]
+family = 'Linux'
+detail = 'Ubuntu'
+votes = { server = 0.2, computer = 0.15 }
+
+[[type_votes]]
+family = 'Linux'
+detail = 'Debian'
+votes = { server = 0.25, computer = 0.1 }
+
+[[type_votes]]
+family = 'Linux'
+detail = 'Home Assistant OS'
+votes = { hub = 0.6, server = 0.2 }
+
+[[type_votes]]
+family = 'Linux'
+detail = 'embedded'
+votes = { iot = 0.25, router = 0.1 }
+
+[[type_votes]]
+family = 'Linux'
+detail = 'embedded (Dropbear)'
+votes = { router = 0.3, iot = 0.2 }
+
+[[type_votes]]
+family = 'Linux'
+votes = { server = 0.1 }
+
+[[type_votes]]
+family = 'OpenWrt'
+votes = { router = 0.8, access_point = 0.2 }
+
+[[type_votes]]
+family = 'RouterOS'
+votes = { router = 0.9 }
+
+[[type_votes]]
+family = 'EdgeOS'
+votes = { router = 0.9 }
+
+[[type_votes]]
+family = 'ESXi'
+votes = { server = 0.9 }
+
+[[type_votes]]
+family = 'DSM'
+votes = { nas = 0.9 }
+
+[[type_votes]]
+family = 'FreeBSD'
+votes = { server = 0.2, router = 0.15 }
+
+[[type_votes]]
+family = 'FreeBSD'
+detail = 'firewall distro'
+votes = { router = 0.8 }
+
+[[type_votes]]
+family = 'FreeBSD'
+detail = 'TrueNAS'
+votes = { nas = 0.8 }
+
+[[type_votes]]
+family = 'Embedded'
+detail = 'ESP firmware'
+votes = { iot = 0.6 }
+
+[[type_votes]]
+family = 'Embedded'
+votes = { iot = 0.2 }

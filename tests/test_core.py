@@ -81,14 +81,11 @@ def test_nothing_known_is_unknown():
     assert classify.classify(make()).device_type == "unknown"
 
 
-def test_every_classifier_type_exists_in_catalog_and_has_icon():
-    used = set()
-    for table in (classify._VENDOR, classify._NAME, classify._TEXT):
-        for _, votes in table:
-            used |= set(votes)
-    for votes in list(classify._SERVICE.values()) + list(classify._PORT.values()):
-        used |= set(votes)
-    assert used <= set(devtypes.TYPES)
+def test_every_device_type_has_an_icon_and_rules_load_clean():
+    from netscout import rules
+    rs = rules.load(use_user=False)          # packaged rules validate strictly: types, weights, regexes
+    assert len(rs.vendor) > 50 and len(rs.services) > 50 and len(rs.os_text) > 30 and rs.ports[445]
+    assert not rs.errors
     assert set(devtypes.TYPES) <= set(icons._BODY)
 
 

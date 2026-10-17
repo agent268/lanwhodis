@@ -1,0 +1,42 @@
+# Open-TCP-port rules. Keys are port numbers (quoted: TOML keys are strings).
+
+[ports]
+"22" = { server = 0.1, computer = 0.05 }
+"23" = { router = 0.15, iot = 0.15 }
+"53" = { router = 0.3, server = 0.1 }
+"135" = { computer = 0.4 }
+"139" = { computer = 0.2, nas = 0.1 }
+"445" = { computer = 0.25, nas = 0.15 }
+"161" = { router = 0.1, switch = 0.15, printer = 0.1, nas = 0.1 }
+"515" = { printer = 0.7 }
+"548" = { nas = 0.3, computer = 0.15 }
+"554" = { camera = 0.6 }
+"8554" = { camera = 0.5 }
+"631" = { printer = 0.85 }
+"9100" = { printer = 0.9 }
+"1883" = { iot = 0.35, hub = 0.2 }
+"8883" = { iot = 0.3 }
+"2049" = { nas = 0.35, server = 0.2 }
+"3389" = { computer = 0.6 }
+"5000" = { nas = 0.35 }
+"5001" = { nas = 0.45 }
+"5555" = { tv = 0.3, streaming = 0.3 }
+"5900" = { computer = 0.3, server = 0.1 }
+"5985" = { computer = 0.3 }
+"6668" = { iot = 0.5, smart_plug = 0.3 }
+"7000" = { streaming = 0.3, tv = 0.2 }
+"7547" = { gateway = 0.7, router = 0.3 }
+"8008" = { streaming = 0.3, tv = 0.15, speaker = 0.1 }
+"8009" = { streaming = 0.3, tv = 0.15, speaker = 0.1 }
+"8060" = { streaming = 0.9 }
+"8096" = { media_server = 0.85 }
+"8200" = { media_server = 0.6 }
+"32400" = { media_server = 0.9 }
+"8123" = { hub = 0.7 }
+"8291" = { router = 0.3 }
+"8728" = { router = 0.85 }
+"9999" = { smart_plug = 0.4, iot = 0.2 }
+"37777" = { camera = 0.9 }
+"34567" = { camera = 0.8 }
+"55443" = { light = 0.7 }
+"62078" = { phone = 0.85, tablet = 0.15 }
