@@ -1,6 +1,6 @@
-# LanWhodis design language
+# Deckwork design language
 
-Reference for the visual system. Token values mirror `lanwhodis/gui/qml/LanWhodis/Theme.qml` (a test fails if they drift, so update both together). The illustrated, shareable version is the published design-language page; the last section of this file is a prompt that lets an AI coding assistant reuse the language. The same prompt is in `design-language-prompt.txt`.
+Deckwork is the visual system shared by steamos-fm and LanWhodis. Token values mirror `lanwhodis/gui/qml/LanWhodis/Theme.qml` (a test fails if they drift, so update both together). The illustrated version is `deckwork-design-language.html`; the last section of this file is a prompt that lets an AI coding assistant reuse the language. The same prompt is in `design-language-prompt.txt`.
 
 ## Principles
 
@@ -23,7 +23,7 @@ Reference for the visual system. Token values mirror `lanwhodis/gui/qml/LanWhodi
 | `accentDim` | Muted accent (defined for pressed states, used sparingly) | `#2c5f99` | `#1255a0` | `#c06010` |
 | `selected` | Fill of the selected card | `#1e3a5f` | `#c8dff7` | `#3d2a18` |
 | `text` | Primary text and chrome icons | `#e8edf2` | `#1c2535` | `#e8edf2` |
-| `textDim` | Secondary text, labels, counts, IPs | `#8696a8` | `#5d6d80` | `#8696a8` |
+| `textDim` | Secondary text, labels, counts, IPs | `#95a1ae` | `#5d6d80` | `#95a1ae` |
 | `divider` | Hairlines between regions | `#2a3545` | `#d0d8e0` | `#2a3545` |
 | `dialogSurface` | Dialogs, menus, tooltips, toasts | `#232e3d` | `#ffffff` | `#232e3d` |
 | `dialogBorder` | Their 1 px edge | `#3c4d61` | `#c3cedb` | `#3c4d61` |
@@ -33,9 +33,16 @@ Reference for the visual system. Token values mirror `lanwhodis/gui/qml/LanWhodi
 | `buttonSurface` | Default (secondary) button fill | `#33455e` | `#e2e9f1` | `#34455c` |
 | `buttonBorder` | Its edge | `#5578a3` | `#93a7bd` | `#5a7699` |
 | `inputSurface` | Text inputs, search, segmented control | `#0f1722` | `#ffffff` | `#0f1722` |
+| `accentFill` | Solid primary-button fill (deeper than accent so white ink passes) | `#2a6ccb` | `#1a6bc2` | `#b4560a` |
+| `dangerFill` | Solid danger-button fill | `#c93a33` | `#c93a33` | `#c93a33` |
+| `accentInk` | Label color on accentFill and dangerFill (white) | `#ffffff` | `#ffffff` | `#ffffff` |
+| `dangerInk` | Label color on dangerFill | `#ffffff` | `#ffffff` | `#ffffff` |
 | `success` | Status only: NEW and BACK chips, good results | `#4cc38a` | `#2e8f5e` | `#4cc38a` |
 | `warning` | Status only: caution, medium confidence | `#e0a84f` | `#b87a1c` | `#e0a84f` |
 | `danger` | Status only: destructive actions, low confidence | `#e5534b` | `#c93a33` | `#e5534b` |
+| `successText` | Status chip text (tuned to pass 4.5:1 on its own tint) | `#4cc38a` | `#26754d` | `#4cc38a` |
+| `warningText` | Warning chip text | `#e0a84f` | `#8e5e16` | `#e0a84f` |
+| `dangerText` | Danger chip text | `#ea756f` | `#b7352e` | `#ea756f` |
 
 Category colors (device kinds only): Computers `#4C8DFF`, Mobile `#B36BFF`, Media `#FF7A59`, Gaming `#2EC4A0`, Smart Home `#F2B01E`, Peripherals `#6E8BA8`, Network `#3FB6E8`, Other `#8A94A3`.
 
@@ -146,121 +153,137 @@ Category colors (device kinds only): Computers `#4C8DFF`, Mobile `#B36BFF`, Medi
 
 ## Contrast audit
 
-44 of 57 measured pairs meet their WCAG target. Below target:
+The shared core as LanWhodis ships it: 87 of 87 measured pairs meet their WCAG target (4.5:1 text including 15px bold, 3:1 icons). Solid buttons use `accentFill` / `dangerFill` with white ink.
+
+steamos-fm today (not yet adopted): 11 pairs below target.
 
 | Theme | Pair | Colors | Ratio | Target |
 |---|---|---|---|---|
+| Dark | dim text on surface | `#7a8a9a` on `#1a2332` | 4.46 | 4.5 |
+| Dark | dim text on dialog | `#7a8a9a` on `#232e3d` | 3.88 | 4.5 |
+| Dark | dim text on section | `#7a8a9a` on `#2a374a` | 3.4 | 4.5 |
 | Dark | white on accent button | `#ffffff` on `#4a9eff` | 2.75 | 4.5 |
-| Dark | white on danger button | `#ffffff` on `#e5534b` | 3.7 | 4.5 |
-| Dark | danger chip text | `#e5534b` on `#3a2b36` | 3.6 | 4.5 |
-| Light | success chip text | `#2e8f5e` on `#deede5` | 3.33 | 4.5 |
-| Light | warning chip text | `#b87a1c` on `#f4eadb` | 3.01 | 4.5 |
-| Light | danger chip text | `#c93a33` on `#f6dfde` | 4.01 | 4.5 |
-| Light | Media colour on card | `#ff7a59` on `#ffffff` | 2.57 | 3.0 |
-| Light | Gaming colour on card | `#2ec4a0` on `#ffffff` | 2.21 | 3.0 |
-| Light | Smart Home colour on card | `#f2b01e` on `#ffffff` | 1.91 | 3.0 |
-| Light | Network colour on card | `#3fb6e8` on `#ffffff` | 2.32 | 3.0 |
+| Light | dim text on surface | `#6b7b8d` on `#ffffff` | 4.34 | 4.5 |
+| Light | dim text on dialog | `#6b7b8d` on `#ffffff` | 4.34 | 4.5 |
+| Light | dim text on section | `#6b7b8d` on `#f0f4f9` | 3.93 | 4.5 |
+| Deck | dim text on surface | `#7a8a9a` on `#1a2332` | 4.46 | 4.5 |
+| Deck | dim text on dialog | `#7a8a9a` on `#232e3d` | 3.88 | 4.5 |
+| Deck | dim text on section | `#7a8a9a` on `#2a3547` | 3.49 | 4.5 |
 | Deck | white on accent button | `#ffffff` on `#f38020` | 2.65 | 4.5 |
-| Deck | white on danger button | `#ffffff` on `#e5534b` | 3.7 | 4.5 |
-| Deck | danger chip text | `#e5534b` on `#3a2b36` | 3.6 | 4.5 |
-
-Recommended fix for primary/danger labels: `#0e141b` on the accent (6.72:1 dark, 6.98:1 Steam Deck).
 
 ## CSS custom properties
 
 ```css
-/* LanWhodis design tokens. Dark is the default; light and Steam Deck override it.
-   --lw-on-accent is the recommended label color for primary/danger buttons (see the audit). */
+/* Deckwork design tokens. Dark is the default; light and Steam Deck override it.
+   Solid buttons use --dw-accent-fill / --dw-danger-fill with --dw-accent-ink / --dw-danger-ink. */
 :root {
-  --lw-unit: 20px;            /* multiply by the user's zoom */
-  --lw-font-size-sm: calc(var(--lw-unit) * 0.62);
-  --lw-font-size: calc(var(--lw-unit) * 0.75);
-  --lw-font-size-lg: calc(var(--lw-unit) * 0.95);
-  --lw-font-size-xl: calc(var(--lw-unit) * 1.35);
-  --lw-row-height: calc(var(--lw-unit) * 1.9);
-  --lw-radius: calc(var(--lw-unit) * 0.5);
-  --lw-radius-lg: calc(var(--lw-unit) * 0.8);
-  --lw-pad: calc(var(--lw-unit) * 0.5);
-  --lw-gap: calc(var(--lw-unit) * 0.6);
-  --lw-font: "Segoe UI", system-ui, "DejaVu Sans", sans-serif;
-  --lw-mono: "Cascadia Mono", Consolas, "DejaVu Sans Mono", monospace;
+  --dw-unit: 20px;            /* multiply by the user's zoom */
+  --dw-font-size-sm: calc(var(--dw-unit) * 0.62);
+  --dw-font-size: calc(var(--dw-unit) * 0.75);
+  --dw-font-size-lg: calc(var(--dw-unit) * 0.95);
+  --dw-font-size-xl: calc(var(--dw-unit) * 1.35);
+  --dw-row-height: calc(var(--dw-unit) * 1.9);
+  --dw-radius: calc(var(--dw-unit) * 0.5);
+  --dw-radius-lg: calc(var(--dw-unit) * 0.8);
+  --dw-pad: calc(var(--dw-unit) * 0.5);
+  --dw-gap: calc(var(--dw-unit) * 0.6);
+  --dw-font: "Segoe UI", system-ui, "DejaVu Sans", sans-serif;
+  --dw-mono: "Cascadia Mono", Consolas, "DejaVu Sans Mono", monospace;
 }
 :root,
 :root[data-theme="dark"] {
-  --lw-bg: #0e141b;
-  --lw-surface: #1a2332;
-  --lw-surface-alt: #222d3e;
-  --lw-accent: #4a9eff;
-  --lw-accent-dim: #2c5f99;
-  --lw-selected: #1e3a5f;
-  --lw-text: #e8edf2;
-  --lw-text-dim: #8696a8;
-  --lw-divider: #2a3545;
-  --lw-dialog-surface: #232e3d;
-  --lw-dialog-border: #3c4d61;
-  --lw-scrim: rgba(4, 10, 13, 0.65);
-  --lw-section-surface: #1f2a3a;
-  --lw-section-border: #33445b;
-  --lw-button-surface: #33455e;
-  --lw-button-border: #5578a3;
-  --lw-input-surface: #0f1722;
-  --lw-success: #4cc38a;
-  --lw-warning: #e0a84f;
-  --lw-danger: #e5534b;
-  --lw-on-accent: #0e141b;
+  --dw-bg: #0e141b;
+  --dw-surface: #1a2332;
+  --dw-surface-alt: #222d3e;
+  --dw-accent: #4a9eff;
+  --dw-accent-dim: #2c5f99;
+  --dw-selected: #1e3a5f;
+  --dw-text: #e8edf2;
+  --dw-text-dim: #95a1ae;
+  --dw-divider: #2a3545;
+  --dw-dialog-surface: #232e3d;
+  --dw-dialog-border: #3c4d61;
+  --dw-scrim: rgba(4, 10, 13, 0.65);
+  --dw-section-surface: #1f2a3a;
+  --dw-section-border: #33445b;
+  --dw-button-surface: #33455e;
+  --dw-button-border: #5578a3;
+  --dw-input-surface: #0f1722;
+  --dw-accent-fill: #2a6ccb;
+  --dw-danger-fill: #c93a33;
+  --dw-accent-ink: #ffffff;
+  --dw-danger-ink: #ffffff;
+  --dw-success: #4cc38a;
+  --dw-warning: #e0a84f;
+  --dw-danger: #e5534b;
+  --dw-success-text: #4cc38a;
+  --dw-warning-text: #e0a84f;
+  --dw-danger-text: #ea756f;
 }
 :root[data-theme="light"] {
-  --lw-bg: #f0f4f8;
-  --lw-surface: #ffffff;
-  --lw-surface-alt: #e4e9f0;
-  --lw-accent: #1a6bc2;
-  --lw-accent-dim: #1255a0;
-  --lw-selected: #c8dff7;
-  --lw-text: #1c2535;
-  --lw-text-dim: #5d6d80;
-  --lw-divider: #d0d8e0;
-  --lw-dialog-surface: #ffffff;
-  --lw-dialog-border: #c3cedb;
-  --lw-scrim: rgba(20, 30, 45, 0.40);
-  --lw-section-surface: #f4f7fb;
-  --lw-section-border: #c3cedb;
-  --lw-button-surface: #e2e9f1;
-  --lw-button-border: #93a7bd;
-  --lw-input-surface: #ffffff;
-  --lw-success: #2e8f5e;
-  --lw-warning: #b87a1c;
-  --lw-danger: #c93a33;
-  --lw-on-accent: #ffffff;
+  --dw-bg: #f0f4f8;
+  --dw-surface: #ffffff;
+  --dw-surface-alt: #e4e9f0;
+  --dw-accent: #1a6bc2;
+  --dw-accent-dim: #1255a0;
+  --dw-selected: #c8dff7;
+  --dw-text: #1c2535;
+  --dw-text-dim: #5d6d80;
+  --dw-divider: #d0d8e0;
+  --dw-dialog-surface: #ffffff;
+  --dw-dialog-border: #c3cedb;
+  --dw-scrim: rgba(20, 30, 45, 0.40);
+  --dw-section-surface: #f4f7fb;
+  --dw-section-border: #c3cedb;
+  --dw-button-surface: #e2e9f1;
+  --dw-button-border: #93a7bd;
+  --dw-input-surface: #ffffff;
+  --dw-accent-fill: #1a6bc2;
+  --dw-danger-fill: #c93a33;
+  --dw-accent-ink: #ffffff;
+  --dw-danger-ink: #ffffff;
+  --dw-success: #2e8f5e;
+  --dw-warning: #b87a1c;
+  --dw-danger: #c93a33;
+  --dw-success-text: #26754d;
+  --dw-warning-text: #8e5e16;
+  --dw-danger-text: #b7352e;
 }
 :root[data-theme="deck"] {
-  --lw-bg: #0e141b;
-  --lw-surface: #1a2332;
-  --lw-surface-alt: #222d3e;
-  --lw-accent: #f38020;
-  --lw-accent-dim: #c06010;
-  --lw-selected: #3d2a18;
-  --lw-text: #e8edf2;
-  --lw-text-dim: #8696a8;
-  --lw-divider: #2a3545;
-  --lw-dialog-surface: #232e3d;
-  --lw-dialog-border: #3c4d61;
-  --lw-scrim: rgba(4, 10, 13, 0.65);
-  --lw-section-surface: #1f2a3a;
-  --lw-section-border: #33445b;
-  --lw-button-surface: #34455c;
-  --lw-button-border: #5a7699;
-  --lw-input-surface: #0f1722;
-  --lw-success: #4cc38a;
-  --lw-warning: #e0a84f;
-  --lw-danger: #e5534b;
-  --lw-on-accent: #0e141b;
+  --dw-bg: #0e141b;
+  --dw-surface: #1a2332;
+  --dw-surface-alt: #222d3e;
+  --dw-accent: #f38020;
+  --dw-accent-dim: #c06010;
+  --dw-selected: #3d2a18;
+  --dw-text: #e8edf2;
+  --dw-text-dim: #95a1ae;
+  --dw-divider: #2a3545;
+  --dw-dialog-surface: #232e3d;
+  --dw-dialog-border: #3c4d61;
+  --dw-scrim: rgba(4, 10, 13, 0.65);
+  --dw-section-surface: #1f2a3a;
+  --dw-section-border: #33445b;
+  --dw-button-surface: #34455c;
+  --dw-button-border: #5a7699;
+  --dw-input-surface: #0f1722;
+  --dw-accent-fill: #b4560a;
+  --dw-danger-fill: #c93a33;
+  --dw-accent-ink: #ffffff;
+  --dw-danger-ink: #ffffff;
+  --dw-success: #4cc38a;
+  --dw-warning: #e0a84f;
+  --dw-danger: #e5534b;
+  --dw-success-text: #4cc38a;
+  --dw-warning-text: #e0a84f;
+  --dw-danger-text: #ea756f;
 }
 ```
 
 ## Prompt for an AI coding assistant
 
 ```text
-You are helping me build UI in the "LanWhodis" design language (it descends from steamos-fm). Follow it closely and ask before you deviate.
+You are helping me build UI in the "Deckwork" design language, the shared language of steamos-fm and LanWhodis. Follow it closely and ask before you deviate.
 
 CHARACTER
 Deep navy surfaces, ONE blue accent, rounded cards, icon tiles tinted by category, boxed sections with small uppercase letter-spaced titles. Calm, dense, friendly to a mouse and a game controller. No drop shadows. No gradients. No emoji as icons.
@@ -274,7 +297,7 @@ accent: dark #4a9eff | light #1a6bc2 | deck #f38020
 accentDim: dark #2c5f99 | light #1255a0 | deck #c06010
 selected: dark #1e3a5f | light #c8dff7 | deck #3d2a18
 text: dark #e8edf2 | light #1c2535 | deck #e8edf2
-textDim: dark #8696a8 | light #5d6d80 | deck #8696a8
+textDim: dark #95a1ae | light #5d6d80 | deck #95a1ae
 divider: dark #2a3545 | light #d0d8e0 | deck #2a3545
 dialogSurface: dark #232e3d | light #ffffff | deck #232e3d
 dialogBorder: dark #3c4d61 | light #c3cedb | deck #3c4d61
@@ -284,10 +307,17 @@ sectionBorder: dark #33445b | light #c3cedb | deck #33445b
 buttonSurface: dark #33455e | light #e2e9f1 | deck #34455c
 buttonBorder: dark #5578a3 | light #93a7bd | deck #5a7699
 inputSurface: dark #0f1722 | light #ffffff | deck #0f1722
+accentFill: dark #2a6ccb | light #1a6bc2 | deck #b4560a
+dangerFill: dark #c93a33 | light #c93a33 | deck #c93a33
+accentInk: dark #ffffff | light #ffffff | deck #ffffff
+dangerInk: dark #ffffff | light #ffffff | deck #ffffff
 success: dark #4cc38a | light #2e8f5e | deck #4cc38a
 warning: dark #e0a84f | light #b87a1c | deck #e0a84f
 danger: dark #e5534b | light #c93a33 | deck #e5534b
-Add one token the original lacks: onAccent = #0e141b on dark and deck, #ffffff on light (label color on accent/danger fills).
+successText: dark #4cc38a | light #26754d | deck #4cc38a
+warningText: dark #e0a84f | light #8e5e16 | deck #e0a84f
+dangerText: dark #ea756f | light #b7352e | deck #ea756f
+Solid buttons use accentFill / dangerFill with accentInk / dangerInk (white) labels; the bright accent is for icons, focus rings, links and selection.
 Category colors (device kinds, never state): Computers #4C8DFF, Mobile #B36BFF, Media #FF7A59, Gaming #2EC4A0, Smart Home #F2B01E, Peripherals #6E8BA8, Network #3FB6E8, Other #8A94A3.
 
 SCALE (everything is a multiple of one unit; unit = 20px x user zoom)
@@ -301,7 +331,7 @@ Radius: 0.5u controls and sections, 0.8u cards and dialogs, pills fully rounded,
 RECIPES
 - Icon tile: rounded square, fill = category color at 17%, border = 38%, glyph at 54% of the tile in the full category color. Offline: 8% / 15%, glyph at 45% opacity.
 - Chip: height 1.3u, pill, fontSizeSm bold, text = tone, fill 16%, border 35%. Tones: neutral(textDim), accent, success, warning, danger.
-- Button: height 2.1u, radius 0.5u, 1px border, optional 1.1 x fontSizeLg icon. Default = buttonSurface + buttonBorder. Primary = accent fill, bold. Danger = danger fill, bold. Ghost = transparent, no border. Hover lighter (x1.14), press darker (x1.18), disabled 40% opacity, keyboard focus visible.
+- Button: height 2.1u, radius 0.5u, 1px border, optional 1.1 x fontSizeLg icon. Default = buttonSurface + buttonBorder. Primary = accentFill with accentInk label, bold. Danger = dangerFill with dangerInk label, bold. Ghost = transparent, no border. Hover lighter (x1.14; only x1.04 on primary and danger so white ink stays above 4.5:1), press darker (x1.18), disabled 40% opacity, keyboard focus is a 2px accent ring just outside the control.
 - Device card: radius 0.8u, surface fill, 1px divider; tile left, then name (fontSizeLg bold), type (fontSize bold, category color), IP (fontSizeSm mono, textDim); footer: vendor + status chip. Hover: surfaceAlt fill, border = category color at 55%. Selected: selected fill + 2px accent border.
 - Sidebar item: height 2.0u, selected = accent at 20% fill + 4px accent marker + bold; counts in textDim.
 - Boxed section: sectionSurface, 1px sectionBorder, radius 0.5u, uppercase title, key/value rows (key 34% textDim, value text).
@@ -314,13 +344,12 @@ Icons: Fluent UI System Icons (MIT), filled variant, recolored at draw time with
 BEHAVIOR
 Color transitions 90-110ms; card press scales to 98.5% over 80ms; toast fades 160ms and holds 2.6s. Motion never changes layout. Keyboard: arrows move through lists, plain-letter shortcuts are ignored while a text field has focus, and a hint bar teaches the keys. Layout collapses in two steps: the sidebar becomes icons-only below 1120px, then the detail panel narrows and the hint legend hides below 1000px.
 
-ACCESSIBILITY (improvements over the original, apply them)
-- Measured contrast: white text on the accent blue is 2.75:1 and on the Deck orange 2.65:1, which fails WCAG AA for normal text. Use onAccent (above) for primary and danger labels instead; #0e141b on #4a9eff is 6.72:1.
-- Light theme: category colors fail as 15px label text on white (Smart Home yellow is 1.9:1). Use the text color for labels and keep the category color on the glyph, or add darker light-theme variants.
-- Light-theme status chips (success, warning, danger on their 16% tint) reach only 3.0-4.0:1; darken those tones in the light theme.
-- Focus: use a 2px accent ring with a 2px offset on every focusable element.
-- Honor the OS reduce-motion setting; give interactive components accessible roles and names.
-- Check every NEW text/background pair you introduce: 4.5:1 for normal text, 3:1 for icons and large text.
+ACCESSIBILITY (already built into the tokens above; keep it that way)
+- Every text/background pair you introduce must reach 4.5:1 (normal text, including 15px bold); icons and large text 3:1. Measure; do not eyeball.
+- Never put white or black text on the bright accent. Use accentFill + accentInk. Hover and press states must keep the ratio.
+- Category colors are for glyphs. For label text in the light theme use the darker label variant of each category color.
+- Status chip text uses successText / warningText / dangerText, not the raw status colors.
+- Focus: a 2px accent ring just outside every focusable element. Honor the OS reduce-motion setting (durations go to 0). Give interactive components accessible roles and names.
 
 HOW TO WORK
 1. Ask which stack I use (web, Qt Quick, Flutter, SwiftUI, ...). Do not assume.

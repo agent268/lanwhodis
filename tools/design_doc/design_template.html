@@ -1,0 +1,625 @@
+<title>Deckwork Design Language</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout concept: a spec sheet. A sticky section rail on the left, one reading column on the right;
+   wide tables and the component board scroll inside their own containers. The page wears the Deckwork
+   palette itself (the viewer's theme picks the dark or light set), so the document is its own first specimen. */
+:root {
+  --bg: #f0f4f8;           /* Deckwork light: bg */
+  --surface: #ffffff;
+  --surface-2: #e4e9f0;
+  --section: #f4f7fb;
+  --section-border: #c3cedb;
+  --divider: #d0d8e0;
+  --input: #ffffff;
+  --text: #1c2535;
+  --text-dim: #5d6d80;
+  --accent: #1a6bc2;
+  --on-accent: #ffffff;
+  --selected: #c8dff7;
+  --success: #2e8f5e;
+  --warning: #b87a1c;
+  --danger: #c93a33;
+  --code-bg: #e9eef5;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, "DejaVu Sans Mono", monospace;
+  --rail: 232px;
+  --measure: 66ch;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0e141b; --surface: #1a2332; --surface-2: #222d3e; --section: #1f2a3a; --section-border: #33445b;
+    --divider: #2a3545; --input: #0f1722; --text: #e8edf2; --text-dim: #8696a8; --accent: #4a9eff;
+    --on-accent: #0e141b; --selected: #1e3a5f; --success: #4cc38a; --warning: #e0a84f; --danger: #e5534b;
+    --code-bg: #0b1118;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e141b; --surface: #1a2332; --surface-2: #222d3e; --section: #1f2a3a; --section-border: #33445b;
+  --divider: #2a3545; --input: #0f1722; --text: #e8edf2; --text-dim: #8696a8; --accent: #4a9eff;
+  --on-accent: #0e141b; --selected: #1e3a5f; --success: #4cc38a; --warning: #e0a84f; --danger: #e5534b;
+  --code-bg: #0b1118;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 16px/1.6 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+}
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px;
+}
+code, pre, .mono { font-family: var(--font-mono); }
+code { font-size: .88em; background: var(--code-bg); padding: .1em .38em; border-radius: 5px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.12; margin: 0; letter-spacing: -.01em; }
+p { margin: 0; }
+.dim { color: var(--text-dim); }
+
+/* ── shell ─────────────────────────────────────────────────────────────── */
+.shell { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); gap: 56px; max-width: 1240px; margin: 0 auto; }
+.rail { position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto; padding-block: 40px 24px; display: flex; flex-direction: column; gap: 22px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-mark { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 17%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent); }
+.brand b { font: 800 17px/1.1 var(--font-display); display: block; }
+.brand span { font-size: 12px; color: var(--text-dim); }
+.rail nav { display: flex; flex-direction: column; gap: 18px; }
+.rail h4 { margin: 0 0 6px; font: 700 11px/1 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); }
+.rail ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+.rail a { display: block; padding: 5px 10px; border-radius: 8px; color: var(--text); text-decoration: none; font-size: 14px; }
+.rail a:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+.rail a[aria-current="true"] { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); font-weight: 600; }
+main { padding-block: 56px 96px; display: flex; flex-direction: column; gap: 88px; min-width: 0; }
+
+/* ── hero ──────────────────────────────────────────────────────────────── */
+.hero { display: flex; flex-direction: column; gap: 22px; }
+.eyebrow { font: 700 12px/1 var(--font-body); letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+.hero h1 { font-size: clamp(40px, 6.4vw, 72px); font-weight: 800; letter-spacing: -.025em; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .lede { font-size: 19px; max-width: 58ch; color: var(--text-dim); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 12px; border-radius: 14px; font-size: 12.5px; font-weight: 600;
+  background: color-mix(in srgb, var(--text) 7%, transparent); border: 1px solid color-mix(in srgb, var(--text) 16%, transparent); }
+.shot { margin: 8px 0 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--divider); background: #0e141b; }
+.shot img { display: block; width: 100%; height: auto; }
+.shot figcaption { padding: 10px 16px; font-size: 13px; color: var(--text-dim); background: var(--surface); border-top: 1px solid var(--divider); }
+
+/* ── section scaffolding ───────────────────────────────────────────────── */
+section { display: flex; flex-direction: column; gap: 28px; }
+.sec-head { display: flex; flex-direction: column; gap: 12px; }
+.sec-head h2 { font-size: clamp(28px, 3.6vw, 40px); font-weight: 800; }
+.sec-head .lede { color: var(--text-dim); max-width: var(--measure); font-size: 17px; }
+h3 { font-size: 21px; font-weight: 700; }
+.prose { max-width: var(--measure); display: flex; flex-direction: column; gap: 14px; }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.scroll { overflow-x: auto; border: 1px solid var(--divider); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 10px 14px; vertical-align: top; border-bottom: 1px solid var(--divider); }
+th { font: 700 11px/1.2 var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--text-dim); background: var(--section); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td code { white-space: nowrap; }
+
+/* principles */
+.principles { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0; border-top: 1px solid var(--divider); }
+.principle { padding: 22px 28px 22px 0; border-bottom: 1px solid var(--divider); display: flex; flex-direction: column; gap: 8px; }
+.principle h3 { font-size: 19px; }
+.principle p { color: var(--text-dim); font-size: 15px; }
+
+/* swatches */
+.sw { display: inline-flex; align-items: center; gap: 9px; font-family: var(--font-mono); font-size: 12.5px; cursor: pointer; background: none; border: 0; color: inherit; padding: 0; }
+.sw i { width: 22px; height: 22px; border-radius: 6px; border: 1px solid color-mix(in srgb, var(--text) 25%, transparent); flex: none; }
+.sw:hover span { text-decoration: underline; }
+.tokens td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+.cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.cat { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--divider); }
+.cat b { display: block; font-size: 14px; }
+.cat small { color: var(--text-dim); font-family: var(--font-mono); font-size: 12px; }
+.recipes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.recipe { padding: 16px; border-radius: 12px; background: var(--section); border: 1px solid var(--section-border); display: flex; flex-direction: column; gap: 10px; }
+.recipe h4 { margin: 0; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim); }
+.recipe .demo { display: flex; gap: 8px; align-items: center; min-height: 40px; }
+
+/* type scale */
+.scale-row td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+.sample { color: var(--text); line-height: 1.25; }
+
+/* icon grid */
+.icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.icon-cell { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 8px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--divider); text-align: center; }
+.icon-cell small { font-size: 12px; color: var(--text-dim); line-height: 1.25; }
+.tile { display: grid; place-items: center; flex: none; width: var(--s, 56px); height: var(--s, 56px); border-radius: calc(var(--s, 56px) * .28);
+  color: var(--c); background: color-mix(in srgb, var(--c) 17%, transparent); border: 1px solid color-mix(in srgb, var(--c) 38%, transparent); }
+.tile svg { width: 54%; height: 54%; }
+
+/* ── component board ───────────────────────────────────────────────────── */
+.seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--input); border: 1px solid var(--section-border); }
+.seg button { font: 600 13px var(--font-body); padding: 6px 14px; border-radius: 8px; border: 0; background: none; color: var(--text-dim); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); }
+.board-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+{{SPECIMEN_THEMES}}
+.sp { background: var(--sp-bg); color: var(--sp-text); border: 1px solid var(--divider); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 28px; font-family: "Segoe UI", system-ui, "DejaVu Sans", sans-serif; transition: background .15s, color .15s; }
+.sp-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+.sp-label { font: 700 11px/1 "Segoe UI", system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--sp-dim); width: 100%; }
+.sp svg { display: block; }
+.c-btn { display: inline-flex; align-items: center; gap: 9px; height: 42px; padding: 0 15px; border-radius: 10px; font-size: 15px; background: var(--sp-button); border: 1px solid var(--sp-button-border); color: var(--sp-text); cursor: default; }
+.c-btn svg { width: 21px; height: 21px; }
+.c-btn.primary { background: var(--sp-accent-fill); border-color: color-mix(in srgb, var(--sp-accent-fill) 87%, black); color: var(--sp-ink); font-weight: 700; }
+.c-btn.danger { background: var(--sp-danger-fill); border-color: color-mix(in srgb, var(--sp-danger-fill) 87%, black); color: var(--sp-ink); font-weight: 700; }
+.c-btn.ghost { background: transparent; border-color: transparent; }
+.c-btn.hover { filter: brightness(1.14); }
+.c-btn.primary.hover, .c-btn.danger.hover { filter: brightness(1.04); }
+.c-btn.ghost.hover { background: color-mix(in srgb, var(--sp-text) 10%, transparent); filter: none; }
+.c-btn.focus { box-shadow: 0 0 0 2px var(--sp-bg), 0 0 0 4px var(--sp-accent); }
+.c-btn.disabled { opacity: .4; }
+.c-ibtn { width: 42px; height: 42px; border-radius: 10px; display: grid; place-items: center; }
+.c-ibtn svg { width: 23px; height: 23px; }
+.c-ibtn.active { background: color-mix(in srgb, var(--sp-accent) 22%, transparent); color: var(--sp-accent); }
+.c-ibtn.hover { background: color-mix(in srgb, var(--sp-text) 10%, transparent); }
+.c-chip { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border-radius: 13px; font-size: 12.4px; font-weight: 700;
+  color: var(--t); background: color-mix(in srgb, var(--t) 16%, transparent); border: 1px solid color-mix(in srgb, var(--t) 35%, transparent); }
+.c-chip svg { width: 15px; height: 15px; }
+.cards { width: 100%; display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+.c-card { width: auto; min-width: 0; height: 128px; border-radius: 16px; background: var(--sp-surface); border: 1px solid var(--sp-divider); padding: 16px; display: grid; grid-template-columns: 62px 1fr; grid-template-rows: auto 1fr; gap: 0 14px; position: relative; }
+.c-card.hover { background: var(--sp-surface-alt); border-color: color-mix(in srgb, var(--c) 55%, transparent); }
+.c-card.selected { background: var(--sp-selected); border: 2px solid var(--sp-accent); padding: 15px; }
+.c-card.offline .nm, .c-card.offline .ty { opacity: .55; }
+.c-card .nm { font-size: 19px; font-weight: 700; line-height: 1.2; }
+.c-card .ty { color: var(--c); font-size: 15px; font-weight: 700; line-height: 1.25; }
+.c-card .ip { color: var(--sp-dim); font: 12.4px "Cascadia Mono", Consolas, "DejaVu Sans Mono", monospace; }
+.c-card .foot { grid-column: 1 / -1; align-self: end; display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--sp-dim); font-size: 12.4px; }
+.c-side { width: 230px; display: flex; flex-direction: column; gap: 2px; }
+.c-si { height: 40px; border-radius: 10px; display: flex; align-items: center; gap: 11px; padding: 0 14px; font-size: 15px; position: relative; color: color-mix(in srgb, var(--sp-text) 85%, transparent); }
+.c-si svg { width: 22px; height: 22px; }
+.c-si .n { margin-left: auto; font-size: 12.4px; color: var(--sp-dim); }
+.c-si.sel { background: color-mix(in srgb, var(--sp-accent) 20%, transparent); color: var(--sp-text); font-weight: 700; }
+.c-si.sel::before { content: ""; position: absolute; left: 2px; top: 10px; bottom: 10px; width: 4px; border-radius: 2px; background: var(--sp-accent); }
+.c-si.sel svg { color: var(--sp-accent); }
+.c-sect { width: 340px; border-radius: 10px; background: var(--sp-section); border: 1px solid var(--sp-section-border); padding: 10px 13px 12px; }
+.c-sect h5 { margin: 0 0 8px; font-size: 12.4px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; color: var(--sp-dim); }
+.c-sect dl { margin: 0; display: grid; grid-template-columns: 34% 1fr; gap: 5px 8px; font-size: 12.4px; }
+.c-sect dt { color: var(--sp-dim); }
+.c-sect dd { margin: 0; }
+.c-search { width: 280px; height: 42px; border-radius: 21px; background: var(--sp-input); border: 1px solid var(--sp-section-border); display: flex; align-items: center; gap: 10px; padding: 0 14px; color: var(--sp-dim); font-size: 15px; }
+.c-search.focus { border-color: var(--sp-accent); }
+.c-search svg { width: 19px; height: 19px; }
+.c-segm { display: inline-flex; gap: 2px; padding: 4px; border-radius: 10px; background: var(--sp-input); border: 1px solid var(--sp-section-border); }
+.c-segm .c-ibtn { width: 35px; height: 35px; }
+.c-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; width: 100%; padding: 10px 14px; border-top: 1px solid var(--sp-divider); font-size: 12.4px; color: var(--sp-dim); }
+.c-hint .k { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 7px; margin-right: 6px; border-radius: 5px; font-weight: 700; font-size: 11.4px; color: var(--sp-text);
+  background: color-mix(in srgb, var(--sp-text) 8%, transparent); border: 1px solid color-mix(in srgb, var(--sp-text) 22%, transparent); }
+.c-hint .msg { margin-right: auto; }
+.c-dialog { width: 420px; border-radius: 16px; background: var(--sp-dialog); border: 1px solid var(--sp-dialog-border); padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+.c-dialog h5 { margin: 0; font-size: 27px; font-weight: 700; }
+.c-field { height: 44px; border-radius: 10px; background: var(--sp-input); border: 1px solid var(--sp-accent); display: flex; align-items: center; padding: 0 14px; font-size: 15px; }
+.c-pick { display: flex; flex-wrap: wrap; gap: 8px; }
+.c-opt { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 13px; border-radius: 18px; font-size: 12.4px; background: color-mix(in srgb, var(--sp-text) 6%, transparent); border: 1px solid color-mix(in srgb, var(--sp-text) 15%, transparent); }
+.c-opt svg { width: 17px; height: 17px; color: var(--c); }
+.c-opt.on { background: color-mix(in srgb, var(--c) 28%, transparent); border-color: var(--c); }
+
+.specs { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; }
+.spec-card { background: var(--surface); border: 1px solid var(--divider); border-radius: 12px; overflow: hidden; }
+.spec-card h3 { padding: 14px 16px 6px; font-size: 17px; }
+.spec-card table { font-size: 13.5px; }
+.spec-card th { display: none; }
+.spec-card td:first-child { color: var(--text-dim); width: 38%; white-space: nowrap; }
+
+/* shell diagram */
+.diagram { display: grid; gap: 10px; padding: 18px; border-radius: 14px; background: var(--section); border: 1px solid var(--section-border); font-size: 12.5px; }
+.diagram div { border: 1.5px dashed color-mix(in srgb, var(--text) 35%, transparent); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 2px; background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.diagram b { font-weight: 700; }
+.diagram small { color: var(--text-dim); font-family: var(--font-mono); font-size: 11.5px; }
+.shell-d { grid-template-columns: 17% 1fr 24%; grid-template-rows: 54px 150px 44px; grid-template-areas: "h h h" "s c d" "f f f"; }
+.shell-d .h { grid-area: h; } .shell-d .s { grid-area: s; } .shell-d .c { grid-area: c; } .shell-d .d { grid-area: d; } .shell-d .f { grid-area: f; }
+
+/* audit */
+.audit-sum { display: flex; flex-wrap: wrap; gap: 14px; }
+.stat { padding: 14px 18px; border-radius: 12px; background: var(--surface); border: 1px solid var(--divider); min-width: 150px; }
+.stat b { display: block; font: 800 30px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 13px; color: var(--text-dim); }
+.fail { color: var(--danger); font-weight: 700; }
+.ok { color: var(--success); font-weight: 700; }
+.pair { display: inline-flex; align-items: center; gap: 8px; }
+.pair i { display: inline-grid; place-items: center; width: 34px; height: 24px; border-radius: 6px; font: 700 13px var(--font-body); font-style: normal; border: 1px solid color-mix(in srgb, var(--text) 20%, transparent); }
+.gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 18px; margin-bottom: 28px; }
+.gallery .shot { margin: 0; }
+.gallery .shot:first-child { grid-column: 1 / -1; }
+.gallery .shot img { max-width: 100%; border-radius: 12px; border: 1px solid var(--section-border); display: block; }
+.gallery figcaption { color: var(--text-dim); font-size: 13.5px; margin-top: 8px; }
+.compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.compare div { padding: 18px; border-radius: 12px; background: var(--section); border: 1px solid var(--section-border); display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.compare small { color: var(--text-dim); }
+.btn-demo { height: 42px; padding: 0 18px; border-radius: 10px; font: 700 15px "Segoe UI", system-ui, sans-serif; border: 0; display: inline-flex; align-items: center; }
+
+/* code */
+.codebox { position: relative; border-radius: 12px; background: var(--code-bg); border: 1px solid var(--divider); }
+.codebox pre { margin: 0; padding: 18px 20px; overflow-x: auto; font-size: 12.8px; line-height: 1.6; max-height: 520px; }
+.copy { position: absolute; top: 10px; right: 10px; height: 30px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--section-border); background: var(--surface); color: var(--text); font: 600 12.5px var(--font-body); cursor: pointer; }
+.copy:hover { border-color: var(--accent); color: var(--accent); }
+.copy.done { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+details { border: 1px solid var(--divider); border-radius: 12px; background: var(--surface); }
+details > summary { cursor: pointer; padding: 12px 16px; font-weight: 600; list-style: none; display: flex; align-items: center; gap: 10px; }
+details > summary::before { content: "▸"; color: var(--text-dim); transition: transform .15s; }
+details[open] > summary::before { transform: rotate(90deg); }
+details > .inner { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.prompt-wrap .codebox pre { max-height: 640px; white-space: pre-wrap; word-break: break-word; }
+.note { padding: 14px 18px; border-radius: 12px; background: color-mix(in srgb, var(--warning) 11%, transparent); border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent); max-width: var(--measure); font-size: 15px; }
+.foot { padding-top: 24px; border-top: 1px solid var(--divider); color: var(--text-dim); font-size: 13.5px; display: flex; flex-direction: column; gap: 6px; }
+
+@media (max-width: 960px) {
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .rail { position: static; height: auto; padding-block: 24px 0; }
+  .rail nav { flex-direction: row; flex-wrap: wrap; gap: 6px 22px; }
+  .rail ul { flex-direction: row; flex-wrap: wrap; }
+  main { padding-block: 32px 72px; gap: 64px; }
+}
+@media (max-width: 560px) {
+  .sp { padding: 14px; }
+  .c-card, .c-sect, .c-dialog, .c-search { width: 100%; }
+  .principle { padding-right: 0; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+</style>
+
+<div class="shell">
+  <aside class="rail">
+    <div class="brand">
+      <div class="brand-mark">{{I:ui_scan:24}}</div>
+      <div><b>Deckwork</b><span>Design language</span></div>
+    </div>
+    <nav aria-label="Sections">
+      <div><h4>Foundations</h4><ul>
+        <li><a href="#principles">Principles</a></li><li><a href="#inuse">In two apps</a></li><li><a href="#color">Color</a></li><li><a href="#type">Type and scale</a></li>
+        <li><a href="#space">Space and shape</a></li><li><a href="#icons">Icons</a></li></ul></div>
+      <div><h4>Components</h4><ul>
+        <li><a href="#components">Component board</a></li><li><a href="#layout">App layout</a></li></ul></div>
+      <div><h4>Behavior</h4><ul>
+        <li><a href="#motion">Motion and states</a></li><li><a href="#a11y">Accessibility audit</a></li></ul></div>
+      <div><h4>Reuse</h4><ul>
+        <li><a href="#implement">Tokens as code</a></li><li><a href="#prompt">AI prompt</a></li><li><a href="#lineage">Lineage and credits</a></li></ul></div>
+    </nav>
+  </aside>
+
+  <main>
+    <header class="hero">
+      <p class="eyebrow">Design language · v2 · measured from two shipping apps</p>
+      <h1>Calm navy surfaces, one blue accent, <em>icons you can read at a glance.</em></h1>
+      <p class="lede">Deckwork is the visual system shared by steamos-fm, a controller-first file manager, and LanWhodis, a network device scanner. It is written down here so a third project can pick it up. Every value on this page was read from the apps' own theme files, and the contrast numbers were measured, not assumed.</p>
+      <div class="meta">
+        <span class="pill">Qt Quick / QML</span><span class="pill">3 themes: dark, light, Steam Deck</span>
+        <span class="pill">Fluent UI icons, MIT</span><span class="pill">One scale unit: 20&nbsp;px × zoom</span>
+      </div>
+      <figure class="shot">
+        <img alt="LanWhodis main window in the dark theme: category sidebar, a grid of device cards with tinted icon tiles, and a detail panel for a Philips Hue bridge" src="data:image/jpeg;base64,{{SHOT_GRID}}">
+        <figcaption>LanWhodis, dark theme, after a real scan: sidebar with counts, device cards, and the detail panel.</figcaption>
+      </figure>
+    </header>
+
+    <section id="principles">
+      <div class="sec-head"><p class="eyebrow">Foundations</p><h2>Seven rules the rest follows from</h2>
+        <p class="lede">These are the decisions that explain most of what you see. When a new screen has to choose, it chooses the way these do.</p></div>
+      <div class="principles">
+        <div class="principle"><h3>Layers are steps, not shadows</h3><p>Each surface sits one clearly visible luminance step above the one beneath it, and edges are 1&nbsp;px borders. There are no drop shadows. steamos-fm learned this on a handheld: when a button and its panel differed by a single step, the buttons were nearly invisible.</p></div>
+        <div class="principle"><h3>One accent, and it means "you can act on this"</h3><p>Blue (orange in Steam Deck mode) marks selection, focus and primary actions. Green, amber and red report status. Category colors say what kind of thing a device is. The three never swap jobs.</p></div>
+        <div class="principle"><h3>Shape, color and word, together</h3><p>A device is a glyph on a tinted tile plus a type label in words. Color alone never carries meaning, so the interface survives color blindness and a washed-out screen.</p></div>
+        <div class="principle"><h3>Pointer and controller first</h3><p>Rows are 38&nbsp;px tall at the base scale and text starts at 12&nbsp;px. Touch works, but it does not set the size. The left stick on a Steam Deck is a precise pointer.</p></div>
+        <div class="principle"><h3>Show the reasoning</h3><p>Detail panels list the evidence behind a verdict, with weights. Section titles are uppercase and letter-spaced, so a long panel stays scannable.</p></div>
+        <div class="principle"><h3>Every action has a key, and the footer says which</h3><p>The hint bar is part of the layout. Plain-letter shortcuts are ignored while a text field has focus.</p></div>
+        <div class="principle"><h3>One unit scales everything</h3><p>Sizes are multiples of a 20&nbsp;px unit times the user's zoom. Change the unit and the whole interface rescales together.</p></div>
+      </div>
+    </section>
+
+    <section id="inuse">
+      <div class="sec-head"><p class="eyebrow">Foundations</p><h2>The same language in two apps</h2>
+        <p class="lede">Deckwork started in steamos-fm and was refined in LanWhodis. The shared core is the palette, scale, shapes and component vocabulary. Each app adds a few tokens of its own: steamos-fm has file-kind tints and a pane header, LanWhodis has category colors and status tones.</p></div>
+      <div class="gallery">
+        <figure class="shot"><img alt="steamos-fm main window, dark theme: places sidebar, dual file panes, button legend footer" src="data:image/jpeg;base64,{{SFM_DARK}}"><figcaption>steamos-fm, dark. Dual panes, a places sidebar, and a controller button legend in the footer.</figcaption></figure>
+        <figure class="shot"><img alt="steamos-fm in the light theme" src="data:image/jpeg;base64,{{SFM_LIGHT}}"><figcaption>steamos-fm, light.</figcaption></figure>
+        <figure class="shot"><img alt="steamos-fm in Steam Deck mode with the orange accent" src="data:image/jpeg;base64,{{SFM_DECK}}"><figcaption>steamos-fm, Steam Deck mode: same navy, orange accent.</figcaption></figure>
+        <figure class="shot"><img alt="steamos-fm file properties dialog with boxed sections and buttons" src="data:image/jpeg;base64,{{SFM_PROPS}}"><figcaption>A dialog with boxed sections, the pattern the section and button tokens exist for.</figcaption></figure>
+        <figure class="shot"><img alt="LanWhodis in the light theme" src="data:image/jpeg;base64,{{LW_LIGHT}}"><figcaption>LanWhodis, light.</figcaption></figure>
+      </div>
+      <h3>Decisions that came from holding it in your hands</h3>
+      <p class="prose dim">steamos-fm is tested on a handheld (ASUS ROG Ally X, 7 inch panel). Its source records what the device taught the design. These are why several tokens look the way they do.</p>
+      <div class="scroll"><table><thead><tr><th>Date</th><th>What the device showed</th><th>What changed</th></tr></thead><tbody>
+        <tr><td class="num">2026-07-14</td><td>Buttons and sections were nearly invisible: the secondary fill and the dialog behind it differed by about one luminance step.</td><td>Added <code>sectionSurface</code>, <code>buttonSurface</code> and their borders, each a deliberate step lighter. Primary buttons moved from a muted accent to the full accent. This is where "layers are steps, not shadows" comes from.</td></tr>
+        <tr><td class="num">2026-07-18 / 19</td><td>The controller button legend still read as crowded on real hardware, after the first fix.</td><td>The gap between legend entries and each glyph-to-label gap were widened twice.</td></tr>
+        <tr><td class="num">2026-08-01</td><td>The title bar read as small on the 7 inch panel.</td><td>A dedicated title-bar scale token, 20% larger, rather than changing the global sizes.</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="color">
+      <div class="sec-head"><p class="eyebrow">Foundations</p><h2>Color</h2>
+        <p class="lede">Three palettes share one set of token names. Components reference tokens, never hex values, so switching theme is a single assignment. Click any swatch to copy its value.</p></div>
+      <div class="scroll"><table class="tokens"><thead><tr><th>Token</th><th>Role</th><th>Dark</th><th>Light</th><th>Steam Deck</th></tr></thead><tbody>{{COLOR_TABLE}}</tbody></table></div>
+      <h3>Category colors</h3>
+      <p class="prose dim">Fixed mid-tones chosen to read on both light and dark surfaces. They tint a device's icon tile and its type label, and they never indicate state.</p>
+      <div class="cats">{{CATEGORY_SWATCHES}}</div>
+      <h3>Alpha recipes</h3>
+      <p class="prose dim">Tints are one color at a fixed opacity over whatever is behind it, so they work on every surface and theme.</p>
+      <div class="recipes">
+        <div class="recipe"><h4>Icon tile</h4><div class="demo"><span class="tile" style="--c:#4a9eff;--s:48px">{{I:device_laptop:24}}</span><span class="mono dim" style="font-size:12.5px">fill 17% · border 38%<br>offline: 8% · 15%</span></div></div>
+        <div class="recipe"><h4>Status chip</h4><div class="demo"><span class="c-chip" style="--t:var(--success)">NEW</span><span class="c-chip" style="--t:var(--text-dim)">OFFLINE</span><span class="mono dim" style="font-size:12.5px">fill 16% · border 35%</span></div></div>
+        <div class="recipe"><h4>Hover and press</h4><div class="demo"><span class="mono dim" style="font-size:12.5px">overlay of text color:<br>hover 8–10% · press 16%</span></div></div>
+        <div class="recipe"><h4>Selected</h4><div class="demo"><span class="mono dim" style="font-size:12.5px">accent at 20% fill + 2px accent border (cards) or a 4px marker (sidebar)</span></div></div>
+        <div class="recipe"><h4>Scrim</h4><div class="demo"><span class="mono dim" style="font-size:12.5px">#04 0a 0d at 65% (dark)<br>#14 1e 2d at 40% (light)</span></div></div>
+      </div>
+    </section>
+
+    <section id="type">
+      <div class="sec-head"><p class="eyebrow">Foundations</p><h2>Type and scale</h2>
+        <p class="lede">The app uses the platform's own interface font (Segoe UI on Windows, DejaVu Sans or the system font on Linux), so it feels native and needs no font files. What is fixed is the scale: five sizes, all multiples of the unit.</p></div>
+      <div class="scroll"><table><thead><tr><th>Token</th><th class="num">× unit</th><th class="num">px at 1×</th><th>Used for</th><th>Sample</th></tr></thead><tbody>{{SCALE_ROWS}}</tbody></table></div>
+      <div class="prose">
+        <p><b>Weights.</b> Regular for running text and values. Bold for device names, type labels, primary buttons and chips. Nothing in between.</p>
+        <p><b>Section titles.</b> Uppercase, bold, <code>fontSizeSm</code>, letter-spacing <code>0.08 × unit</code> (1.6&nbsp;px), dim color.</p>
+        <p><b>Monospace.</b> IP addresses and MACs only. It makes columns of addresses line up and signals "this is a literal you may copy".</p>
+        <p><b>Measure.</b> Detail values wrap at the panel width (about 56 characters at default zoom); long unbroken strings such as service URLs wrap anywhere instead of overflowing.</p>
+      </div>
+    </section>
+
+    <section id="space">
+      <div class="sec-head"><p class="eyebrow">Foundations</p><h2>Space and shape</h2>
+        <p class="lede">Everything is a multiple of the unit. Corners are generous on large surfaces and tighter on controls. Depth comes from surface color and a hairline border, never from shadow.</p></div>
+      <div class="scroll"><table><thead><tr><th>Token</th><th class="num">× unit</th><th class="num">px at 1×</th><th>Used for</th></tr></thead><tbody>
+        <tr><td><code>unit</code></td><td class="num">1</td><td class="num">20</td><td>The only absolute: 20&nbsp;px × the user's zoom (70–180%)</td></tr>
+        <tr><td><code>pad</code></td><td class="num">0.5</td><td class="num">10</td><td>Inner padding of boxed sections, small gaps</td></tr>
+        <tr><td><code>gap</code></td><td class="num">0.6</td><td class="num">12</td><td>Spacing between sibling elements</td></tr>
+        <tr><td><code>radius</code></td><td class="num">0.5</td><td class="num">10</td><td>Buttons, inputs, sections, sidebar items, dialogs' fields</td></tr>
+        <tr><td><code>radiusLg</code></td><td class="num">0.8</td><td class="num">16</td><td>Device cards, dialogs</td></tr>
+        <tr><td>Tile radius</td><td class="num">28% of size</td><td class="num">–</td><td>Scales with the tile so a 42&nbsp;px and a 104&nbsp;px tile look related</td></tr>
+        <tr><td>Pill</td><td class="num">height ÷ 2</td><td class="num">–</td><td>Chips, search field, network picker</td></tr>
+        <tr><td>Borders</td><td class="num">–</td><td class="num">1</td><td>Always 1&nbsp;px, except a selected card (2&nbsp;px accent)</td></tr>
+        <tr><td>Elevation</td><td class="num">–</td><td class="num">–</td><td>None. Use the next surface token: <code>bg</code> → <code>surface</code> → <code>surfaceAlt</code> / <code>dialogSurface</code></td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="icons">
+      <div class="sec-head"><p class="eyebrow">Foundations</p><h2>Iconography</h2>
+        <p class="lede">Microsoft's Fluent UI System Icons, filled variant, served as SVG and recolored at draw time so one file serves every theme. Each device type has one glyph and one category color; together they make a recognizable tile.</p></div>
+      <div class="icons">{{TYPE_GRID}}</div>
+      <div class="prose">
+        <p><b>Recipe.</b> A rounded-square tile (radius 28% of its size) filled with the category color at 17% and outlined at 38%. The glyph fills 54% of the tile and uses the full category color.</p>
+        <p><b>Chrome icons</b> (search, scan, edit, copy, filters) use the text color, or the accent when active or selected. They sit at about 1.1× the large text size.</p>
+        <p><b>Pinning.</b> The bundled set is fetched by a script at a pinned commit, with the MIT notice stored beside it, so it is reproducible and can be refreshed deliberately.</p>
+      </div>
+    </section>
+
+    <section id="components">
+      <div class="sec-head"><p class="eyebrow">Components</p><h2>Component board</h2>
+        <p class="lede">Rebuilt here in HTML from the app's real dimensions. Switch the theme to check how each piece behaves on every palette. The buttons are drawn as shipped, with white labels; the audit below shows why that deserves a second look.</p></div>
+      <div class="board-head">
+        <div class="seg" role="group" aria-label="Specimen theme">
+          <button type="button" data-sp-set="dark" aria-pressed="true">Dark</button>
+          <button type="button" data-sp-set="light" aria-pressed="false">Light</button>
+          <button type="button" data-sp-set="deck" aria-pressed="false">Steam Deck</button>
+        </div>
+        <span class="dim" style="font-size:13px">Dimensions shown at 1× zoom (unit = 20&nbsp;px)</span>
+      </div>
+
+      <div class="sp" id="board" data-sp="dark">
+        <div class="sp-row"><div class="sp-label">Buttons</div>
+          <span class="c-btn primary">{{I:ui_scan:21}}Scan network</span>
+          <span class="c-btn">{{I:ui_edit:21}}Edit</span>
+          <span class="c-btn">{{I:ui_copy:21}}Copy IP</span>
+          <span class="c-btn ghost">Cancel</span>
+          <span class="c-btn danger">{{I:ui_stop:21}}Stop</span>
+          <span class="c-btn primary hover">Hover</span>
+          <span class="c-btn focus">Focus</span>
+          <span class="c-btn disabled">Disabled</span>
+        </div>
+        <div class="sp-row"><div class="sp-label">Icon buttons and segmented control</div>
+          <span class="c-ibtn">{{I:ui_export:23}}</span><span class="c-ibtn hover">{{I:ui_theme:23}}</span><span class="c-ibtn active">{{I:ui_grid:23}}</span>
+          <span class="c-segm"><span class="c-ibtn active">{{I:ui_grid:23}}</span><span class="c-ibtn">{{I:ui_list:23}}</span></span>
+        </div>
+        <div class="sp-row"><div class="sp-label">Chips</div>
+          <span class="c-chip" style="--t:var(--sp-success)">NEW</span><span class="c-chip" style="--t:var(--sp-success)">BACK</span>
+          <span class="c-chip" style="--t:var(--sp-dim)">OFFLINE</span><span class="c-chip" style="--t:var(--sp-warning)">60% sure</span>
+          <span class="c-chip" style="--t:var(--sp-danger)">20% sure</span><span class="c-chip" style="--t:#f2b01e">Smart Home Hub</span>
+          <span class="c-chip" style="--t:var(--sp-accent)">{{I:ui_wifi:15}}Wi-Fi 192.168.1.0/24</span>
+        </div>
+        <div class="sp-row"><div class="sp-label">Device cards: normal, hover, selected, offline</div>
+          <div class="cards">{{CARDS}}</div>
+        </div>
+        <div class="sp-row" style="align-items:flex-start"><div class="sp-label">Sidebar, boxed section, search</div>
+          <div class="c-side">
+            <div class="c-si sel">{{I:ui_apps:22}}All devices<span class="n">37</span></div>
+            <div class="c-si"><span style="color:#4c8dff;display:flex">{{I:device_computer:22}}</span>Computers<span class="n">7</span></div>
+            <div class="c-si"><span style="color:#b36bff;display:flex">{{I:device_phone:22}}</span>Mobile<span class="n">6</span></div>
+            <div class="c-si"><span style="color:#f2b01e;display:flex">{{I:ui_home:22}}</span>Smart Home<span class="n">11</span></div>
+          </div>
+          <div class="c-sect"><h5>General</h5><dl><dt>IP address</dt><dd>192.168.1.122</dd><dt>Vendor</dt><dd>Philips Lighting BV</dd><dt>Model</dt><dd>Philips hue bridge 2015</dd><dt>Open ports</dt><dd>80, 443, 8080</dd></dl></div>
+          <div style="display:flex;flex-direction:column;gap:14px"><div class="c-search focus">{{I:ui_search:19}}Search devices</div><div class="c-search">{{I:ui_search:19}}Search devices</div></div>
+        </div>
+        <div class="sp-row" style="align-items:flex-start"><div class="sp-label">Dialog with type picker</div>
+          <div class="c-dialog"><h5>Edit device</h5>
+            <div class="c-field">Front door</div>
+            <div class="c-pick">
+              <span class="c-opt" style="--c:#f2b01e">{{I:device_doorbell:17}}Doorbell</span>
+              <span class="c-opt on" style="--c:#f2b01e">{{I:device_camera:17}}Camera</span>
+              <span class="c-opt" style="--c:#f2b01e">{{I:device_light:17}}Smart Light</span>
+              <span class="c-opt" style="--c:#4c8dff">{{I:device_laptop:17}}Laptop</span>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end"><span class="c-btn ghost">Cancel</span><span class="c-btn primary">{{I:ui_check:21}}Save</span></div>
+          </div>
+        </div>
+        <div class="sp-row"><div class="sp-label">Hint bar</div>
+          <div class="c-hint"><span class="msg">37 devices found · baseline recorded</span><span><span class="k">←↑↓→</span>Navigate</span><span><span class="k">O</span>Open web UI</span><span><span class="k">E</span>Edit</span><span><span class="k">F5</span>Scan</span><span><span class="k">Ctrl+E</span>Export</span></div>
+        </div>
+      </div>
+
+      <h3>Specifications</h3>
+      <div class="specs">{{SPEC_CARDS}}</div>
+    </section>
+
+    <section id="layout">
+      <div class="sec-head"><p class="eyebrow">Components</p><h2>App layout</h2>
+        <p class="lede">A fixed shell with three columns. The list is the star; the sidebar filters it and the detail panel explains whatever is selected.</p></div>
+      <div class="diagram shell-d" role="img" aria-label="Application shell: header across the top, sidebar left, content center, detail panel right, hint bar across the bottom">
+        <div class="h"><b>Header</b><small>3.6u · 72 px · brand, network picker, search, view, export, theme, Scan</small></div>
+        <div class="s"><b>Sidebar</b><small>11.5u · 230 px<br>icons only: 3.6u</small></div>
+        <div class="c"><b>Content</b><small>card grid: columns = ⌊width ÷ 14u⌋, row 6.4u<br>or list: rows 2.9u</small></div>
+        <div class="d"><b>Detail panel</b><small>21u · 420 px<br>narrow: 16u</small></div>
+        <div class="f"><b>Hint bar</b><small>1.9u · 38 px · status left, key hints right (hidden when narrow)</small></div>
+      </div>
+      <div class="scroll"><table><thead><tr><th>Window width</th><th>Change</th></tr></thead><tbody>
+        <tr><td><code>&lt; 1120 px</code></td><td>Sidebar collapses to icons only (3.6u).</td></tr>
+        <tr><td><code>&lt; 1000 px</code></td><td>Detail panel narrows to 16u, search narrows to 11u, brand tagline and the key-hint legend are hidden.</td></tr>
+        <tr><td>Minimum</td><td>900 × 580 px. Below the minimum nothing reflows further, so size down before shipping to a smaller screen.</td></tr>
+      </tbody></table></div>
+      <div class="prose">
+        <p><b>States of the content area.</b> Before the first scan: a centered tile, a headline, one sentence of reassurance and a single primary button. While the first results arrive: the same hero with a slowly pulsing halo and the live status line. When filters match nothing: a muted icon and a "Clear filters" button.</p>
+        <p><b>Feedback.</b> Transient confirmations ("Copied 192.168.1.1", "Saved") appear as a small toast above the hint bar for 2.6 seconds. Long-lived state lives in the hint bar's status line.</p>
+      </div>
+    </section>
+
+    <section id="motion">
+      <div class="sec-head"><p class="eyebrow">Behavior</p><h2>Motion and states</h2>
+        <p class="lede">Motion confirms an interaction and is never decorative. Everything is short, and nothing moves layout.</p></div>
+      <div class="scroll"><table><thead><tr><th>Where</th><th class="num">Duration</th><th>What changes</th></tr></thead><tbody>
+        <tr><td>Buttons, sidebar items, icon buttons</td><td class="num">90 ms</td><td>Fill color (hover, press, selection)</td></tr>
+        <tr><td>Device cards, search border</td><td class="num">100–110 ms</td><td>Fill and border color</td></tr>
+        <tr><td>Card press</td><td class="num">80 ms</td><td>Scale to 98.5%</td></tr>
+        <tr><td>Scan progress line</td><td class="num">300 ms / 700 ms</td><td>Width eases to the new value; the bar pulses between 100% and 45% opacity</td></tr>
+        <tr><td>Empty-state halo</td><td class="num">900 ms × 2</td><td>Scale 1.0 → 1.22 → 1.0, sine easing, looping while a scan runs</td></tr>
+        <tr><td>Toast</td><td class="num">160 ms + 2.6 s</td><td>Fade in, hold, fade out</td></tr>
+      </tbody></table></div>
+      <div class="scroll"><table><thead><tr><th>State</th><th>Treatment</th></tr></thead><tbody>
+        <tr><td>Hover</td><td>Lighter fill; cards also tint their border with the category color at 55%</td></tr>
+        <tr><td>Pressed</td><td>Darker fill (buttons) or overlay at 16% (icon buttons), cards scale down slightly</td></tr>
+        <tr><td>Selected</td><td>Accent at 20% fill plus a marker (sidebar) or a 2&nbsp;px accent border on the selected fill (cards)</td></tr>
+        <tr><td>Focus (keyboard)</td><td>A 2&nbsp;px accent ring just outside the control. Inputs also show an accent border.</td></tr>
+        <tr><td>Disabled</td><td>40% opacity, no hover</td></tr>
+        <tr><td>Offline (remembered device)</td><td>Dimmed tile (glyph at 45%), 55% text, an OFFLINE chip</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="a11y">
+      <div class="sec-head"><p class="eyebrow">Behavior</p><h2>Accessibility audit</h2>
+        <p class="lede">Contrast was calculated for the pairs the interface really uses, in all three themes, against WCAG 2.x: 4.5:1 for normal text (including 15&nbsp;px bold) and 3:1 for icons and large text. The first table is the shared core as LanWhodis ships it. The second is steamos-fm today, which has not adopted these fixes yet.</p></div>
+      <div class="audit-sum">{{CONTRAST_SUMMARY}}</div>
+      <h3>What the core changed, and why</h3>
+      <div class="prose">
+        <p><b>Primary and danger buttons.</b> White text on the bright accent blue was 2.75:1 (Deck orange 2.65:1). Black ink on the bright blue passed, but looked wrong next to light text everywhere else. The core now fills solid buttons with a deeper tone (<code>accentFill</code>, <code>dangerFill</code>) and uses white ink: {{FIX_RATIO}}:1 on dark, and the hover state stays above 4.5:1. The bright accent stays for icons, focus rings and links.</p>
+        <p><b>Dim text.</b> steamos-fm's secondary text color is below 4.5:1 on its dialogs and section boxes. The core's <code>textDim</code> clears 4.5:1 on every panel surface in the dark and Deck themes.</p>
+        <p><b>Category colors.</b> Yellow, teal, cyan and orange work as tile glyphs on a dark card but are too light as 15&nbsp;px label text on white (Smart Home yellow was 1.9:1). The light theme uses darker label variants, drawn through <code>Theme.labelColor</code>; every category label now passes 4.5:1 in every theme.</p>
+        <p><b>Status chips.</b> Light-theme chip text uses darker <code>successText</code>, <code>warningText</code>, <code>dangerText</code> tones; dark themes lighten the danger text.</p>
+        <p><b>Focus and motion.</b> Keyboard focus is a 2&nbsp;px accent ring just outside the control. Motion durations go to zero when the operating system asks to reduce motion. Components expose <code>Accessible</code> roles and names.</p>
+      </div>
+      <div class="compare">
+        <div><span class="btn-demo" style="background:#4a9eff;color:#ffffff">Scan network</span><small>Before: white on #4a9eff, 2.75:1</small></div>
+        <div><span class="btn-demo" style="background:#2a6ccb;color:#ffffff">Scan network</span><small>Now: white on #2a6ccb (<code>accentFill</code>), {{FIX_RATIO}}:1</small></div>
+        <div><span class="btn-demo" style="background:#b4560a;color:#ffffff">Scan network</span><small>Deck: white on #b4560a, 4.91:1</small></div>
+      </div>
+      <h3>steamos-fm today</h3>
+      <p class="prose dim">Measured from steamos-fm's own theme file. These are the pairs that fall short; adopting the core tokens fixes all of them.</p>
+      <div class="scroll"><table><thead><tr><th>Theme</th><th>Pair</th><th>Colors</th><th class="num">Ratio</th><th class="num">Target</th><th>Result</th></tr></thead><tbody>{{SFM_FAILS}}</tbody></table></div>
+      <details><summary>All {{N_CHECKS}} measured rows for the core</summary><div class="inner"><div class="scroll"><table><thead><tr><th>Theme</th><th>Pair</th><th>Colors</th><th class="num">Ratio</th><th class="num">Target</th><th>Result</th></tr></thead><tbody>{{CONTRAST_ALL}}</tbody></table></div></div></details>
+    </section>
+
+    <section id="implement">
+      <div class="sec-head"><p class="eyebrow">Reuse</p><h2>Tokens as code</h2>
+        <p class="lede">The same tokens in two forms. The CSS block is ready for a web project; the QML file is the real theme singleton from the app.</p></div>
+      <h3>CSS custom properties</h3>
+      <div class="codebox"><button class="copy" type="button" data-copy="css-vars">Copy</button><pre id="css-vars"><code>{{CSS_VARS}}</code></pre></div>
+      <p class="prose dim">Set <code>data-theme="light"</code> or <code>data-theme="deck"</code> on the root element, or leave it unset for dark. Units: <code>--dw-unit: 20px</code>; derive sizes with <code>calc(var(--dw-unit) * 0.75)</code> so a single zoom variable rescales the page.</p>
+      <details><summary>Qt Quick: the full Theme.qml singleton</summary><div class="inner">
+        <p class="dim" style="font-size:14px">Register it with <code>singleton Theme 1.0 Theme.qml</code> in a <code>qmldir</code>, then bind <code>Theme.mode</code> to your settings.</p>
+        <div class="codebox"><button class="copy" type="button" data-copy="qml-theme">Copy</button><pre id="qml-theme"><code>{{QML_THEME}}</code></pre></div></div></details>
+    </section>
+
+    <section id="prompt" class="prompt-wrap">
+      <div class="sec-head"><p class="eyebrow">Reuse</p><h2>Prompt for an AI coding assistant</h2>
+        <p class="lede">Paste this at the start of a conversation in your friend's project. It carries the tokens, recipes and rules, so the assistant can build in this language without seeing anything else. It names the contrast problem and the fix, so the copy is better than the original.</p></div>
+      <div class="codebox"><button class="copy" type="button" data-copy="prompt-text">Copy prompt</button><pre id="prompt-text">{{PROMPT}}</pre></div>
+    </section>
+
+    <section id="lineage">
+      <div class="sec-head"><p class="eyebrow">Reuse</p><h2>Lineage and credits</h2>
+        <p class="lede">This language started in steamos-fm. LanWhodis kept its palette and component vocabulary and refined a few tokens on purpose. The core takes the refined values; steamos-fm has not adopted them yet.</p></div>
+      <div class="scroll"><table><thead><tr><th>Token</th><th>steamos-fm today</th><th>Deckwork core</th><th>Why</th></tr></thead><tbody>{{LINEAGE}}</tbody></table></div>
+      <div class="prose">
+        <p><b>Added to the core:</b> <code>inputSurface</code> (a darker field for text inputs), <code>success</code>, <code>warning</code>, <code>danger</code> and their text tones, and the solid button tokens <code>accentFill</code>, <code>dangerFill</code>, <code>accentInk</code>, <code>dangerInk</code>.</p>
+        <p><b>Stays app-specific in steamos-fm:</b> file-kind tints (<code>archColor</code>, <code>exeColor</code>, <code>mediaColor</code>), <code>rowLine</code>, <code>focusRow</code>, <code>paneHeader</code> and <code>hidColor</code>, which belong to a file browser.</p>
+        <p><b>Scale.</b> steamos-fm sizes everything from the shorter screen dimension ÷ 40, because it runs full screen on a handheld. LanWhodis runs in a window, so its unit is a fixed 20&nbsp;px times the user's zoom.</p>
+      </div>
+      <div class="foot">
+        <p>Icons: <a href="https://github.com/microsoft/fluentui-system-icons">Fluent UI System Icons</a>, © Microsoft Corporation, MIT License. Banner fingerprints: Rapid7 Recog, BSD-2-Clause (not part of the visual system).</p>
+        <p>Source of truth: each app's <code>Theme.qml</code> (LanWhodis: <code>gui/qml/LanWhodis/Theme.qml</code>; steamos-fm: <code>ui/SteamosFM/Theme.qml</code>) and the components beside it. Both repositories are private; everything needed to reuse the language is on this page.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  var board = document.getElementById("board");
+  var btns = document.querySelectorAll("[data-sp-set]");
+  btns.forEach(function (b) {
+    b.addEventListener("click", function () {
+      board.setAttribute("data-sp", b.getAttribute("data-sp-set"));
+      btns.forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
+    });
+  });
+
+  function copyText(text, button) {
+    function done(ok) {
+      var old = button.textContent;
+      button.textContent = ok ? "Copied" : "Select and copy";
+      button.classList.toggle("done", ok);
+      setTimeout(function () { button.textContent = old; button.classList.remove("done"); }, 1800);
+    }
+    function fallback() {
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      document.body.removeChild(ta); done(ok);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, fallback);
+    } else { fallback(); }
+  }
+  document.querySelectorAll("[data-copy]").forEach(function (b) {
+    b.addEventListener("click", function () { copyText(document.getElementById(b.getAttribute("data-copy")).textContent, b); });
+  });
+  document.querySelectorAll(".sw").forEach(function (s) {
+    s.addEventListener("click", function () {
+      var hex = s.getAttribute("data-hex"), label = s.querySelector("span"), old = label.textContent;
+      copyText(hex, { textContent: "", classList: { toggle: function () {}, remove: function () {} },
+        set textContent(v) { label.textContent = (v === "Copied") ? "copied" : (v === "" ? old : old); } });
+      label.textContent = "copied"; setTimeout(function () { label.textContent = old; }, 1200);
+    });
+  });
+
+  // rail: mark the section in view
+  var links = {};
+  document.querySelectorAll(".rail a").forEach(function (a) { links[a.getAttribute("href").slice(1)] = a; });
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting && links[e.target.id]) {
+          Object.keys(links).forEach(function (k) { links[k].removeAttribute("aria-current"); });
+          links[e.target.id].setAttribute("aria-current", "true");
+        }
+      });
+    }, { rootMargin: "-20% 0px -70% 0px" });
+    document.querySelectorAll("main section[id]").forEach(function (s) { io.observe(s); });
+  }
+})();
+</script>
