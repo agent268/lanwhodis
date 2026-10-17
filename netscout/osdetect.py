@@ -38,7 +38,8 @@ def detect(d: Device) -> None:
                 detail = m.expand(r.detail) if r.detail and "\\" in r.detail else r.detail
                 votes.append((r.family, detail, r.weight, "text", blob[:70]))
     for m in d.recog:
-        found = recog.os_family_and_detail(m, rs.recog_os)
+        found = None if m.params.get("os.device") in rs.recog_os_ignore \
+            else recog.os_family_and_detail(m, rs.recog_os)
         if found:
             votes.append((found[0], found[1], 0.8 * recog.certainty(m, "os"), "recog",
                           f"{m.db}: {m.description}"[:70]))

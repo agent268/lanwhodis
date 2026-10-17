@@ -61,9 +61,10 @@ def _csv(rows, meta) -> str:
     return buf.getvalue()
 
 
-PROTOCOL_ORDER = ("mdns", "upnp", "ssdp", "wsd", "netbios", "tcp")
+PROTOCOL_ORDER = ("mdns", "upnp", "ssdp", "wsd", "smb", "snmp", "netbios", "tcp")
 PROTOCOL_LABEL = {"mdns": "mDNS / Bonjour", "upnp": "UPnP", "ssdp": "SSDP", "wsd": "WS-Discovery",
-                  "netbios": "NetBIOS", "tcp": "Open TCP ports"}
+                  "smb": "SMB / Windows networking", "snmp": "SNMP", "netbios": "NetBIOS",
+                  "tcp": "Open TCP ports"}
 
 
 def grouped_services(r: dict) -> list[tuple[str, list[dict]]]:

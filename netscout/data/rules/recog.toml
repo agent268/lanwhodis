@@ -56,6 +56,11 @@
 "Wireless Presenter" = { wireless_display = 0.6 }
 "Display Controller" = { signage = 0.5 }
 
+# For these os.device values Recog's "OS" is a firmware product line (LaserJet, JetDirect, ...), not an
+# operating system worth showing, so their os.* params don't vote for an OS.
+[os_ignore]
+devices = ["Printer", "Multifunction Device", "Print Server", "Scanner"]
+
 # Recog os.family -> netscout OS family name. Families not listed here pass through unchanged.
 [os_family]
 "Mac OS X" = "macOS"

@@ -29,6 +29,9 @@ def _parser() -> argparse.ArgumentParser:
                    help="validate your custom rules (see README, 'Custom rules') and exit")
     p.add_argument("--services", action="store_true",
                    help="include each device's advertised services in txt/md output (always in json/xlsx/html)")
+    p.add_argument("--no-snmp", action="store_true", help="don't query SNMP (read-only GETs; default community 'public')")
+    p.add_argument("--snmp-community", action="append", metavar="NAME",
+                   help="SNMP read community to try (repeatable; default: public)")
     p.add_argument("--no-ports", action="store_true", help="skip TCP port probing (faster, quieter)")
     p.add_argument("-t", "--timeout", type=float, default=4.0,
                    help="seconds to listen for mDNS/SSDP/WSD replies (default 4)")
@@ -84,7 +87,8 @@ def main(argv: list[str] | None = None) -> int:
         print("Scanning " + ", ".join(str(i.network) for i in ifaces) + " …", file=sys.stderr)
 
     try:
-        devices = scanner.scan(ifaces, timeout=args.timeout, port_scan=not args.no_ports, stop=stop, log=log)
+        devices = scanner.scan(ifaces, timeout=args.timeout, port_scan=not args.no_ports, snmp=not args.no_snmp,
+                                 snmp_communities=tuple(args.snmp_community or ("public",)), stop=stop, log=log)
     except RuntimeError as e:
         print(f"netscout: {e}", file=sys.stderr)
         return 1

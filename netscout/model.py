@@ -12,7 +12,7 @@ from . import catalog, devtypes, oui
 
 
 # Human-assigned names beat protocol-derived ones; opaque ids (UUIDs, hex serials) are last resort.
-_NAME_PRIORITY = ("friendly", "cast", "roku", "upnp", "local", "netbios", "dns", "mdns")
+_NAME_PRIORITY = ("friendly", "cast", "roku", "onvif", "upnp", "local", "smb", "netbios", "snmp", "dns", "mdns")
 _OPAQUE = re.compile(r"^(?:[0-9a-f]{8}-[0-9a-f]{4}-|[0-9a-f]{12}$|fuchsia-)", re.I)
 
 
@@ -134,7 +134,11 @@ class Device:
     def os_label(self) -> str:
         if not self.os_hint:
             return ""
-        return f"{self.os_hint} ({self.os_detail})" if self.os_detail else self.os_hint
+        if not self.os_detail:
+            return self.os_hint
+        if self.os_detail.lower().startswith(self.os_hint.lower()):     # "Windows 11 (build N)" says it all
+            return self.os_detail
+        return f"{self.os_hint} ({self.os_detail})"
 
     @property
     def type_label(self) -> str:

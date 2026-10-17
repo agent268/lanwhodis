@@ -12,6 +12,21 @@ match = '^local-os: darwin'
 family = 'macOS'
 weight = 0.99
 
+# SMB NTLM challenge (discovery/smb.py): the server reports its real Windows version.
+[[text]]
+match = '^smb-ntlm: (.+)'
+family = 'Windows'
+detail = '\1'
+weight = 0.97
+
+# A SMB server that reports no NTLM version is Samba or embedded firmware - a weak hint, hidden unless
+# something else (TTL, banners) agrees.
+[[text]]
+match = '^smb-server: samba-or-embedded'
+family = 'Linux'
+detail = 'Samba (probable)'
+weight = 0.22
+
 [[text]]
 match = '^local-os: linux \| (.+)'
 family = 'Linux'

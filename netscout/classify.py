@@ -7,6 +7,8 @@ reasonable support. The rules themselves are data: see rules.py and netscout/dat
 """
 from __future__ import annotations
 
+import re
+
 from . import devtypes, osdetect, recog, rules
 from .model import Device, Evidence
 
@@ -19,6 +21,9 @@ SPECIFIC_THRESHOLD = 0.45   # a non-generic type at/above this beats any generic
 UNKNOWN_BELOW = 0.20
 
 Votes = dict[str, float]
+
+# "Windows 11 / Server 2025 (build 26100)": the same build number ships as a client and a server OS
+_AMBIGUOUS_WINDOWS = re.compile(r"^(?P<client>.+?) / (?P<server>Server .+?) \(build (?P<build>\d+)\)$")
 
 
 def _vote(ev: list[Evidence], source: str, votes: Votes, detail: str) -> None:
@@ -35,6 +40,12 @@ def gather(d: Device) -> list[Evidence]:
         for rx, votes in rs.vendor:
             if rx.search(v):
                 _vote(ev, "oui", votes, d.vendor)
+
+    sv = d.facts.get("snmp_vendor")      # IANA enterprise behind the SNMP sysObjectID
+    if sv:
+        for rx, votes in rs.vendor:
+            if rx.search(sv.lower()):
+                _vote(ev, "snmp", votes, sv)
 
     for key in d.services:
         votes = rs.services.get(key.lower())
@@ -90,7 +101,7 @@ def classify(d: Device) -> Device:
 
     specific = {t: s for t, s in scores.items() if not devtypes.is_generic(t)}
     best_specific = max(specific, key=specific.get, default=None)
-    if best_specific and specific[best_specific] >= SPECIFIC_THRESHOLD:
+    if best_specific and specific[best_specific] >= SPECIFIC_THRESHOLD - 1e-9:   # noisy-OR float slack
         d.device_type, d.confidence = best_specific, min(specific[best_specific], .99)
     elif scores:
         # generic types are penalised slightly so a weak specific guess can still edge them out
@@ -107,6 +118,11 @@ def classify(d: Device) -> Device:
             and d.device_type not in WINDOWS_PLAUSIBLE):
         d.os_hint = d.os_detail = None
         d.os_confidence = 0.0
+    if d.os_hint == "Windows" and d.os_detail:      # client/server builds share numbers: type decides
+        m = _AMBIGUOUS_WINDOWS.match(d.os_detail)
+        if m:
+            name = f"Windows {m['server']}" if d.device_type == "server" else m["client"]
+            d.os_detail = f"{name} (build {m['build']})"
     if d.os_hint == "iOS" and d.device_type == "tablet":
         d.os_hint = "iPadOS"        # iOS and iPadOS share every network signal; the device type decides
     return d

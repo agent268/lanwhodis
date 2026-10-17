@@ -96,6 +96,12 @@
 "networkvideodisplay" = "ONVIF video display"
 "networkvideorecorder" = "ONVIF recorder"
 
+[smb]
+"ntlm" = "SMB server (identity from NTLM challenge)"
+
+[snmp]
+"agent" = "SNMP agent (readable with the default community)"
+
 [netbios]
 "workstation" = "Workstation name"
 "workgroup" = "Workgroup / domain"

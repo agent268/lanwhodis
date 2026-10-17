@@ -60,6 +60,7 @@ class RuleSet:
     os_type_votes: dict[tuple[str, str | None], Votes] = field(default_factory=dict)
     recog_devices: dict[str, Votes] = field(default_factory=dict)     # Recog hw/os.device -> type votes
     recog_os: dict[str, str] = field(default_factory=dict)            # Recog os.family -> our OS family
+    recog_os_ignore: set[str] = field(default_factory=set)            # os.device values whose "OS" is firmware
     errors: list[str] = field(default_factory=list)      # user-rule problems (lenient mode)
 
 
@@ -145,6 +146,7 @@ def _apply(rs: RuleSet, name: str, doc: dict, strict: bool, src: str) -> None:
                 if strict:
                     raise
                 rs.errors.append(str(e))
+        rs.recog_os_ignore |= {str(x) for x in doc.get("os_ignore", {}).get("devices", [])}
         for key, fam in doc.get("os_family", {}).items():
             if isinstance(fam, str) and fam:
                 rs.recog_os[key] = fam

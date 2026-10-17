@@ -74,3 +74,15 @@ bundled [Rapid7 Recog](https://github.com/rapid7/recog) databases (BSD-2-Clause,
 pinned to a commit recorded in `data/recog/SOURCE.txt`. Results (product, OS vendor/version, hardware device and
 model) feed OS detection and the device-type classifier through `data/rules/recog.toml`. Refresh with
 `python tools/update_recog.py`.
+
+## SNMP and SMB probes
+
+Both are read-only and unauthenticated, on by default, and skipped with `--no-snmp` / `--no-ports`:
+
+- **SNMP** (`discovery/snmp.py`): one GET for sysDescr / sysObjectID / sysName / sysUpTime using only the community
+  names you allow (`--snmp-community`, default `public`). The sysObjectID's IANA enterprise number names the
+  vendor (`data/pen.tsv.gz`, rebuilt by `tools/build_pen.py`); sysDescr goes through the Recog SNMP fingerprints.
+  A device that answers is listed as "SNMP agent (readable with the default community)" - worth knowing about.
+- **SMB** (`discovery/smb.py`): SMB2 NEGOTIATE plus an anonymous NTLM NEGOTIATE; the server's NTLM challenge reports
+  the real Windows version/build, computer and domain name, signing policy and boot time. No login is attempted
+  and nothing is read from the host. Samba/NAS answer without a version, which is only a weak hint.

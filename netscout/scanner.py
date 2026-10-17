@@ -6,7 +6,8 @@ import threading
 from typing import Callable
 
 from . import classify, recog
-from .discovery import mdns, net, probe, ssdp, sweep, wsd
+from .discovery import mdns, net, probe, smb, ssdp, sweep, wsd
+from .discovery import snmp as snmp_mod
 from .discovery.base import Iface, ScanContext
 from .model import Device, DeviceTable
 
@@ -16,6 +17,8 @@ def scan(
     *,
     timeout: float = 4.0,
     port_scan: bool = True,
+    snmp: bool = True,
+    snmp_communities: tuple[str, ...] = ("public",),
     stop: threading.Event | None = None,
     log: Callable[[str], None] = lambda m: None,
     progress: Callable[[str, float], None] = lambda s, f: None,
@@ -60,6 +63,10 @@ def scan(
     if not ctx.stop.is_set():
         log("reading banners / reverse DNS")
         probe.enrich(ctx, devices)
+    if snmp and not ctx.stop.is_set():
+        snmp_mod.run(ctx, devices, tuple(snmp_communities))
+    if port_scan and not ctx.stop.is_set():
+        smb.run(ctx, devices)
 
     # TCP probes force ARP resolution, so hosts that stayed silent in the sweep now have neighbor
     # entries; fill their MACs (and so vendor/OUI evidence) before classifying.
