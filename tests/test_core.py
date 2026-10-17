@@ -298,3 +298,8 @@ def test_local_os_detail_keeps_case():
     d.text = ["local-os: linux | Ubuntu 26.04 LTS (WSL)"]
     osdetect.detect(d)
     assert d.os_detail == "Ubuntu 26.04 LTS (WSL)"
+
+
+def test_gaming_laptop_hostnames():
+    for name in ("Alex-Helios-18", "Predator-Triton-500", "Nitro-5", "alienware-m16"):
+        assert classify.classify(make(hostname=name)).device_type == "laptop", name

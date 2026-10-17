@@ -227,7 +227,7 @@ _NAME: list[tuple[str, Votes]] = [
     (r"^desktop-|^pc-|-pc$|^win-|^workstation", {"computer": .6}),
     (r"laptop|notebook|thinkpad|latitude|\bxps\b|surface|^dell-|^lenovo-", {"laptop": .6}),
     (r"vivobook|zenbook|expertbook|rog-?(zephyrus|flow|strix)|ideapad|yoga|inspiron|pavilion|spectre|"
-     r"elitebook|probook|envy-?x360|galaxy-?book|aspire|swift-?\d|predator|legion|macbook|chromebook",
+     r"elitebook|probook|envy-?x360|galaxy-?book|aspire|swift-?\d|predator|helios|triton|nitro-?\d|omen-|alienware|legion|macbook|chromebook",
      {"laptop": .8}),
     # a CPU architecture in a hostname is something people only name general-purpose computers
     (r"(^|[-_ .])(arm64|aarch64|x64|x86|amd64|win(dows)?-?(arm|11|10))([-_ .0-9]|$)", {"computer": .55}),
