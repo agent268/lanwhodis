@@ -46,7 +46,9 @@ QtObject {
     readonly property color success:        _pal.success
     readonly property color warning:        _pal.warning
     readonly property color danger:         _pal.danger
-    // ink for text on a solid accent / danger fill (white fails on the bright dark-theme fills)
+    // solid button fills are deeper than the accent so white ink clears 4.5:1; the bright accent stays for icons, rings, links
+    readonly property color accentFill:      _pal.accentFill   // solid primary-button fill (white ink on it)
+    readonly property color dangerFill:      _pal.dangerFill
     readonly property color accentInk:       _pal.accentInk
     readonly property color dangerInk:       _pal.dangerInk
     // status colours tuned for 12 px chip text on their own 16% tint (>= 4.5:1)
@@ -91,8 +93,10 @@ QtObject {
         readonly property color success:        "#4cc38a"
         readonly property color warning:        "#e0a84f"
         readonly property color danger:         "#e5534b"
-        readonly property color accentInk:       "#0e141b"
-        readonly property color dangerInk:       "#0e141b"
+        readonly property color accentFill:      "#2a6ccb"
+        readonly property color dangerFill:      "#c93a33"
+        readonly property color accentInk:       "#ffffff"
+        readonly property color dangerInk:       "#ffffff"
         readonly property color successText:    "#4cc38a"
         readonly property color warningText:    "#e0a84f"
         readonly property color dangerText:     "#ea756f"
@@ -119,6 +123,8 @@ QtObject {
         readonly property color success:        "#2e8f5e"
         readonly property color warning:        "#b87a1c"
         readonly property color danger:         "#c93a33"
+        readonly property color accentFill:      "#1a6bc2"
+        readonly property color dangerFill:      "#c93a33"
         readonly property color accentInk:       "#ffffff"
         readonly property color dangerInk:       "#ffffff"
         readonly property color successText:    "#26754d"
@@ -148,8 +154,10 @@ QtObject {
         readonly property color success:        "#4cc38a"
         readonly property color warning:        "#e0a84f"
         readonly property color danger:         "#e5534b"
-        readonly property color accentInk:       "#0e141b"
-        readonly property color dangerInk:       "#0e141b"
+        readonly property color accentFill:      "#b4560a"
+        readonly property color dangerFill:      "#c93a33"
+        readonly property color accentInk:       "#ffffff"
+        readonly property color dangerInk:       "#ffffff"
         readonly property color successText:    "#4cc38a"
         readonly property color warningText:    "#e0a84f"
         readonly property color dangerText:     "#ea756f"

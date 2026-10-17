@@ -16,8 +16,8 @@ Rectangle {
 
     signal clicked()
 
-    readonly property color _base: danger ? Theme.danger
-                                 : primary ? Theme.accent
+    readonly property color _base: danger ? Theme.dangerFill
+                                 : primary ? Theme.accentFill
                                  : ghost ? "transparent" : Theme.buttonSurface
     readonly property color _fg: danger ? Theme.dangerInk : primary ? Theme.accentInk : Theme.text
 
@@ -28,7 +28,7 @@ Rectangle {
     opacity: enabled ? 1.0 : 0.4
     color: !enabled ? _base
          : mouse.pressed ? Qt.darker(_base === "transparent" ? Theme.buttonSurface : _base, 1.18)
-         : mouse.containsMouse ? (ghost ? Theme.alpha(Theme.text, 0.10) : Qt.lighter(_base, 1.14))
+         : mouse.containsMouse ? (ghost ? Theme.alpha(Theme.text, 0.10) : Qt.lighter(_base, (primary || danger) ? 1.04 : 1.14))
          : _base
     border.width: ghost ? 0 : 1
     border.color: (primary || danger) ? Qt.darker(_base, 1.15) : Theme.buttonBorder

@@ -25,6 +25,14 @@ def rgb(h):
     return tuple(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
 
 
+def lighter(h, f):
+    """Qt.lighter(): scale HSV value."""
+    import colorsys
+    hh, s, v = colorsys.rgb_to_hsv(*rgb(h))
+    r, g, b = colorsys.hsv_to_rgb(hh, s, min(1.0, v * f))
+    return "#%02x%02x%02x" % (round(r * 255), round(g * 255), round(b * 255))
+
+
 def lum(c):
     f = lambda v: v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
     r, g, b = (f(v) for v in c)
@@ -59,8 +67,10 @@ def test_text_is_readable_on_every_surface(theme, fg, bg):
 @pytest.mark.parametrize("theme", THEMES)
 def test_text_on_solid_fills_is_readable(theme):
     p = PAL[theme]
-    assert ratio(p["accentInk"], p["accent"]) >= 4.5
-    assert ratio(p["dangerInk"], p["danger"]) >= 4.5
+    assert ratio(p["accentInk"], p["accentFill"]) >= 4.5
+    assert ratio(p["dangerInk"], p["dangerFill"]) >= 4.5
+    assert ratio(p["accentInk"], lighter(p["accentFill"], 1.04)) >= 4.5   # hover state
+    assert ratio(p["dangerInk"], lighter(p["dangerFill"], 1.04)) >= 4.5
     assert ratio(p["text"], p["buttonSurface"]) >= 4.5
     assert ratio(p["accent"], p["bg"]) >= 3.0            # accent as icon / focus ring / link
 
