@@ -5,12 +5,15 @@ import html
 import sys
 import threading
 
-from PySide6.QtCore import QObject, QSize, QSortFilterProxyModel, Qt, QThread, Signal
-from PySide6.QtGui import QColor, QIcon, QPainter, QPixmap, QStandardItem, QStandardItemModel
+from PySide6.QtCore import QObject, QSize, QSortFilterProxyModel, Qt, QThread, QUrl, Signal
+from PySide6.QtGui import (QColor, QDesktopServices, QIcon, QPainter, QPixmap, QStandardItem,
+                           QStandardItemModel)
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (QApplication, QComboBox, QFileDialog, QHBoxLayout, QLabel, QLineEdit,
                                QMainWindow, QMessageBox, QProgressBar, QPushButton, QSplitter,
                                QTableView, QTextBrowser, QVBoxLayout, QWidget, QHeaderView)
+
+from PySide6.QtWidgets import QMenu
 
 from .. import classify, devtypes, export, icons, scanner
 from ..discovery import net
@@ -121,7 +124,13 @@ class MainWindow(QMainWindow):
         hh.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         self.table.sortByColumn(1, Qt.SortOrder.AscendingOrder)
         self.table.selectionModel().selectionChanged.connect(self.show_selected)
+        self.table.doubleClicked.connect(lambda *_: self.open_web_ui())
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self.show_menu)
 
+        self.open_btn = QPushButton("Open web UI")
+        self.open_btn.setEnabled(False)
+        self.open_btn.clicked.connect(lambda *_: self.open_web_ui())
         self.head_icon = QLabel()
         self.head_icon.setFixedSize(56, 56)
         self.head_name = QLabel("Select a device")
@@ -133,8 +142,10 @@ class MainWindow(QMainWindow):
         head = QHBoxLayout()
         head.addWidget(self.head_icon)
         head.addLayout(hl, 1)
+        head.addWidget(self.open_btn, 0, Qt.AlignmentFlag.AlignTop)
         self.detail = QTextBrowser()
         self.detail.setOpenLinks(False)
+        self.detail.anchorClicked.connect(self.on_link)
         right = QWidget()
         rl = QVBoxLayout(right)
         rl.addLayout(head)
@@ -250,7 +261,10 @@ class MainWindow(QMainWindow):
             self.head_name.setText("Select a device")
             self.head_sub.setText("")
             self.detail.clear()
+            self.open_btn.setEnabled(False)
             return
+        self.open_btn.setEnabled(bool(snap["web_url"]))
+        self.open_btn.setToolTip(snap["web_url"] or "No web interface found for this device")
         self.head_icon.setPixmap(type_icon(snap["type"]).pixmap(QSize(56, 56)))
         self.head_name.setText(snap["name"])
         self.head_sub.setText(f"{snap['type_label']} · {int(snap['confidence'] * 100)}% confidence")
@@ -261,6 +275,8 @@ class MainWindow(QMainWindow):
         rows += [(k, v) for k, v in snap["facts"].items()]
         rows += [("Name via " + k, v) for k, v in snap["names"].items()]
         body = "".join(f"<tr><td><b>{e(k)}</b></td><td>{e(str(v))}</td></tr>" for k, v in rows if v)
+        body += "".join(f"<tr><td><b>Web UI</b></td><td><a href=\"{e(w['url'])}\">{e(w['url'])}</a> "
+                        f"<i>({e(w['source'])})</i></td></tr>" for w in snap["web_urls"][:6])
         seen, items = set(), []
         for x in snap["evidence"]:      # same hint arriving via several names/sources is shown once
             key = (x["source"], x["device_type"], str(x["detail"]).lower())
@@ -276,6 +292,42 @@ class MainWindow(QMainWindow):
                              f"{int(x['weight'] * 100)}% <i>{e(str(x['detail']))}</i></li>")
         ev = "".join(items[:20])
         self.detail.setHtml(f"<table cellpadding=3>{body}</table><h4>Why this type?</h4><ul>{ev}</ul>")
+
+    # --- web UI / context menu -------------------------------------------------------------
+    def selected_snap(self) -> dict | None:
+        idx = self.table.selectionModel().selectedRows(1)
+        return self.snapshots.get(idx[0].data()) if idx else None
+
+    def open_web_ui(self, url: str | None = None) -> None:
+        snap = self.selected_snap()
+        allowed = {w["url"] for w in snap["web_urls"]} if snap else set()
+        url = url or (snap["web_url"] if snap else None)
+        if not url or url not in allowed:   # only ever open URLs the scan attributed to this device
+            self.statusBar().showMessage("No web interface found for this device")
+            return
+        QDesktopServices.openUrl(QUrl(url))
+        self.statusBar().showMessage(f"Opened {url}")
+
+    def on_link(self, qurl: QUrl) -> None:
+        self.open_web_ui(qurl.toString())
+
+    def show_menu(self, pos) -> None:
+        idx = self.table.indexAt(pos)
+        if not idx.isValid():
+            return
+        self.table.selectRow(idx.row())
+        snap = self.selected_snap()
+        if not snap:
+            return
+        menu = QMenu(self)
+        act = menu.addAction("Open web UI")
+        act.setEnabled(bool(snap["web_url"]))
+        act.triggered.connect(lambda *_: self.open_web_ui())
+        menu.addSeparator()
+        menu.addAction("Copy IP").triggered.connect(lambda *_: QApplication.clipboard().setText(snap["ip"]))
+        if snap["mac"]:
+            menu.addAction("Copy MAC").triggered.connect(lambda *_: QApplication.clipboard().setText(snap["mac"]))
+        menu.exec(self.table.viewport().mapToGlobal(pos))
 
     # --- export ---------------------------------------------------------------------------
     def export_results(self) -> None:

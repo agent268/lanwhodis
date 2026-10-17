@@ -17,6 +17,7 @@ from .base import ScanContext, run_cmd
 
 PROBE_PORTS = sorted(set(_PORT) | {80, 443, 8080, 8443})
 HTTP_PORTS = (80, 8080, 443, 8443, 5000, 8000)
+_PORT_RANK = {80: 3, 443: 4, 8080: 5, 8443: 6, 5000: 7, 8000: 8}   # preference among probed web ports
 _TITLE = re.compile(r"<title[^>]*>\s*([^<]{1,100}?)\s*</title>", re.I)
 _UNVERIFIED = ssl.create_default_context()
 _UNVERIFIED.check_hostname = False
@@ -71,10 +72,15 @@ def _banners(d: Device) -> None:
         res = _http_get(f"{scheme}://{d.ip}:{port}/")
         if not res:
             continue
-        _, headers, body = res
+        status, headers, body = res
         server = headers.get("Server") or headers.get("server")
         title = _TITLE.search(body)
         www = headers.get("WWW-Authenticate") or headers.get("www-authenticate")
+        # An open HTTP port isn't necessarily a UI (Cast's 8443 answers an empty 404 as text/html):
+        # require a success/redirect or a login challenge, with something to show for it.
+        served = status.startswith(("2", "3")) or status in ("401", "403")
+        if served and (title or www or body.strip() or status.startswith("3")):
+            d.add_web_url(f"{scheme}://{d.ip}:{port}/", "http", _PORT_RANK[port])
         if server:
             d.text.append(server)
             d.facts[f"http{port}_server"] = server

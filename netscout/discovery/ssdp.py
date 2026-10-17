@@ -7,7 +7,7 @@ import time
 import urllib.request
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from .base import ScanContext
 
@@ -70,7 +70,8 @@ def _describe(url: str, expect_ip: str) -> dict | None:
         tag = _NS.sub("", el.tag)
         if tag == "deviceType" and el.text:
             out["types"].append(el.text.strip())
-        elif tag in ("friendlyName", "manufacturer", "modelName", "modelDescription", "modelNumber") and tag not in out:
+        elif tag in ("friendlyName", "manufacturer", "modelName", "modelDescription", "modelNumber",
+                     "presentationURL", "URLBase") and tag not in out:
             v = _text(el)
             if v:
                 out[tag] = v
@@ -113,6 +114,8 @@ def run(ctx: ScanContext) -> None:
         d = ctx.table.get(ip)
         for t in info["types"]:
             d.services.add(f"upnp:{_short_type(t)}")
+        if info.get("presentationURL"):   # often relative: resolve against URLBase, else the description URL
+            d.add_web_url(urljoin(info.get("URLBase") or loc, info["presentationURL"]), "upnp", 0)
         if info.get("friendlyName"):
             d.names.setdefault("upnp", info["friendlyName"])
             d.text.append(info["friendlyName"])

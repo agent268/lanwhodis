@@ -19,7 +19,7 @@ EXT_TO_FORMAT = {".json": "json", ".html": "html", ".htm": "html", ".md": "md", 
                  ".csv": "csv", ".xlsx": "xlsx", ".pdf": "pdf", ".txt": "txt"}
 
 COLUMNS = [("IP", "ip"), ("Name", "name"), ("Type", "type_label"), ("OS", "os"), ("Vendor", "vendor"), ("MAC", "mac"),
-           ("Model", "model"), ("Confidence", "conf"), ("Open ports", "ports"), ("Services", "services")]
+           ("Model", "model"), ("Confidence", "conf"), ("Open ports", "ports"), ("Services", "services"), ("Web UI", "web_url")]
 
 
 def format_for_path(path: str | Path) -> str | None:
@@ -33,7 +33,7 @@ def _rows(devices: Iterable[Device]) -> list[dict]:
         x["conf"] = f"{int(round(d.confidence * 100))}%"
         x["ports"] = ", ".join(map(str, x["open_ports"]))
         x["services"] = ", ".join(s.split(":", 1)[-1] for s in x["services"] if not s.startswith("local:"))
-        for k in ("vendor", "mac", "model", "os"):
+        for k in ("vendor", "mac", "model", "os", "web_url"):
             x[k] = x[k] or ""
         rows.append(x)
     return rows
@@ -99,7 +99,9 @@ def _html(rows, meta) -> str:
             f'<td><b>{e(r["name"])}</b><br><small>{e(r["ip"])}</small></td>'
             f'<td>{e(r["type_label"])}<br><small>{e(r["conf"])}</small></td>'
             f'<td>{e(r["os"])}</td><td>{e(r["vendor"])}<br><small>{e(r["mac"])}</small></td>'
-            f'<td>{e(r["model"])}</td><td><small>{e(r["ports"])}</small></td>'
+            f'<td>{e(r["model"])}'
+            + (f'<br><a href="{e(r["web_url"])}" target="_blank" rel="noopener">Web UI</a>' if r["web_url"] else "")
+            + f'</td><td><small>{e(r["ports"])}</small></td>'
             f'<td><details><summary>{len(r["evidence"])} signals</summary><ul>{ev}</ul></details></td></tr>')
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">

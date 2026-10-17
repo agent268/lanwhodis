@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 import threading
 import time
+from urllib.parse import urlsplit, urlunsplit
 from dataclasses import dataclass, field
 from typing import Callable
 
@@ -39,6 +40,7 @@ class Device:
     services: set[str] = field(default_factory=set)           # e.g. "_airplay._tcp", "upnp:MediaRenderer"
     facts: dict[str, str] = field(default_factory=dict)       # misc key/values for details view
     text: list[str] = field(default_factory=list)             # free-text blobs for keyword rules
+    web_urls: dict[str, tuple[str, int]] = field(default_factory=dict)   # url -> (source, rank; lower wins)
     is_gateway: bool = False
     random_mac: bool = False
     device_type: str = "unknown"
@@ -51,6 +53,27 @@ class Device:
         candidates = [self.names.get(k) for k in _NAME_PRIORITY] + [self.hostname] + list(self.names.values())
         readable = [n for n in candidates if n and not _OPAQUE.match(n)]
         return (readable[0] if readable else None) or self.model or self.vendor or self.hostname or self.ip
+
+    def add_web_url(self, url: str, source: str, rank: int) -> None:
+        """Record a device-hosted admin page. Advertised URLs are untrusted input, so only the
+        device's own IP or its own mDNS name is accepted (and rewritten to the IP); a spoofed or
+        compromised device can't aim the 'open' action at some other site."""
+        try:
+            p = urlsplit(url.strip())
+            port = p.port
+        except ValueError:
+            return
+        own = {self.ip, (self.facts.get("mdns_host") or "").lower()}
+        if p.scheme not in ("http", "https") or not p.hostname or p.hostname.lower() not in own:
+            return
+        clean = urlunsplit((p.scheme, self.ip + (f":{port}" if port else ""), p.path or "/", p.query, ""))
+        if clean not in self.web_urls or rank < self.web_urls[clean][1]:
+            self.web_urls[clean] = (source, rank)
+
+    @property
+    def web_url(self) -> str | None:
+        """Best guess at the device's web UI: UPnP presentationURL > mDNS adminurl > mDNS http > probed port."""
+        return min(self.web_urls, key=lambda u: (self.web_urls[u][1], u), default=None)
 
     @property
     def os_label(self) -> str:
@@ -74,6 +97,9 @@ class Device:
             "type_label": self.type_label,
             "category": devtypes.category(self.device_type),
             "confidence": round(self.confidence, 2),
+            "web_url": self.web_url,
+            "web_urls": [{"url": u, "source": s}
+                         for u, (s, r) in sorted(self.web_urls.items(), key=lambda kv: (kv[1][1], kv[0]))],
             "os": self.os_label,
             "os_family": self.os_hint,
             "os_detail": self.os_detail,

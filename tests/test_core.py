@@ -327,3 +327,48 @@ def test_confident_windows_evidence_survives_type_check():
     d.open_ports |= {135, 445}
     classify.classify(d)
     assert d.device_type == "computer" and d.os_hint == "Windows"
+
+
+# --- web UI discovery --------------------------------------------------------------------
+def test_web_url_resolves_relative_presentation_url():
+    from urllib.parse import urljoin
+    d = make("192.168.1.1")
+    d.add_web_url(urljoin("http://192.168.1.1:5000/rootDesc.xml", "/index.html"), "upnp", 0)
+    assert d.web_url == "http://192.168.1.1:5000/index.html"
+
+
+def test_web_url_rejects_foreign_hosts_and_schemes():
+    d = make("192.168.1.9")
+    for bad in ("http://evil.example.com/", "http://192.168.1.77/", "javascript:alert(1)",
+                "file:///etc/passwd", "ftp://192.168.1.9/", "http://192.168.1.9:99999/"):
+        d.add_web_url(bad, "upnp", 0)
+    assert d.web_urls == {}
+
+
+def test_web_url_mdns_name_is_rewritten_to_ip_and_ranked():
+    d = make("192.168.1.66")
+    d.facts["mdns_host"] = "HP4EC91.local"
+    d.add_web_url("http://192.168.1.66:80/", "http", 3)
+    d.add_web_url("http://HP4EC91.local:80/", "mdns", 1)       # same page, better source wins
+    d.add_web_url("https://192.168.1.66:443/", "http", 4)
+    assert d.web_url == "http://192.168.1.66:80/" and d.web_urls["http://192.168.1.66:80/"][0] == "mdns"
+    assert [w["source"] for w in d.to_dict()["web_urls"]][0] == "mdns"
+
+
+def test_web_url_in_exports(devices):
+    devices[0].add_web_url("http://192.168.1.2:8080/", "http", 5)
+    assert "http://192.168.1.2:8080/" in export.render(devices, "csv")
+    assert 'href="http://192.168.1.2:8080/"' in export.render(devices, "html")
+
+
+def test_empty_404_is_not_a_web_ui_but_a_real_page_is(monkeypatch):
+    # regression: Cast devices answer 8443 with an empty 404 labelled text/html
+    from netscout.discovery import probe
+    d = make("192.168.1.123")
+    d.open_ports = {8443}
+    monkeypatch.setattr(probe, "_http_get", lambda *a, **k: ("404", {"Content-Type": "text/html"}, ""))
+    probe._banners(d)
+    assert d.web_url is None
+    monkeypatch.setattr(probe, "_http_get", lambda *a, **k: ("200", {}, "<html><title>Router</title></html>"))
+    probe._banners(d)
+    assert d.web_url == "https://192.168.1.123:8443/"

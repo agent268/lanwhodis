@@ -15,7 +15,7 @@ def _txt(props: dict) -> dict[str, str]:
     out = {}
     for k, v in props.items():
         key = k.decode("utf-8", "replace") if isinstance(k, bytes) else str(k)
-        out[key] = v.decode("utf-8", "replace") if isinstance(v, bytes) else ("" if v is None else str(v))
+        out[key.lower()] = v.decode("utf-8", "replace") if isinstance(v, bytes) else ("" if v is None else str(v))
     return out
 
 
@@ -59,6 +59,13 @@ def run(ctx: ScanContext) -> None:
                         d.hostname = host[:-6]
                 if info.port:
                     d.facts[f"mdns:{short}"] = f"port {info.port}"
+                if short in ("_http._tcp", "_https._tcp") and info.port:
+                    path = props.get("path") or "/"
+                    scheme = "https" if short == "_https._tcp" else "http"
+                    d.add_web_url(f"{scheme}://{addr}:{info.port}{path if path.startswith('/') else '/' + path}",
+                                  "mdns", 2)
+                if props.get("adminurl"):     # printers (IPP) and some cast devices publish this
+                    d.add_web_url(props["adminurl"], "mdns", 1)
                 # model hints live in TXT records: model/md/am/ty/product, fn/fn=friendly name
                 for key in ("model", "md", "am", "ty", "product", "modelname"):
                     if props.get(key):
