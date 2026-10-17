@@ -94,6 +94,7 @@ def gather(d: Device) -> list[Evidence]:
 
 
 def classify(d: Device) -> Device:
+    d.auto_type = None          # a fresh verdict; LabelStore.apply records it and overlays user corrections
     d.evidence = gather(d)
     scores: dict[str, float] = {}
     for e in d.evidence:

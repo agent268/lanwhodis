@@ -78,6 +78,12 @@ class Device:
     web_urls: dict[str, tuple[str, int]] = field(default_factory=dict)   # url -> (source, rank; lower wins)
     advertised: list[ServiceRecord] = field(default_factory=list)       # structured service listing
     recog: list[RecogMatch] = field(default_factory=list)               # banner fingerprint matches
+    # user corrections (labels.py); auto_* keep the scanner's own verdict so it stays visible
+    user_name: str | None = None
+    user_type: str | None = None
+    user_notes: str | None = None
+    auto_type: str | None = None
+    auto_confidence: float = 0.0
     is_gateway: bool = False
     random_mac: bool = False
     device_type: str = "unknown"
@@ -87,6 +93,8 @@ class Device:
 
     @property
     def display_name(self) -> str:
+        if self.user_name:
+            return self.user_name
         candidates = [self.names.get(k) for k in _NAME_PRIORITY] + [self.hostname] + list(self.names.values())
         readable = [n for n in candidates if n and not _OPAQUE.match(n)]
         return (readable[0] if readable else None) or self.model or self.vendor or self.hostname or self.ip
@@ -159,6 +167,10 @@ class Device:
             "advertised": [r.to_dict() for r in sorted(
                 self.advertised, key=lambda r: (r.protocol, r.kind, r.name, r.port or 0))],
             "recog": [m.to_dict() for m in self.recog],
+            "user": ({"name": self.user_name, "type": self.user_type, "notes": self.user_notes,
+                      "auto_type": self.auto_type, "auto_type_label": devtypes.label(self.auto_type or "unknown"),
+                      "auto_confidence": round(self.auto_confidence, 2)}
+                     if (self.user_name or self.user_type or self.user_notes) else None),
             "web_url": self.web_url,
             "web_urls": [{"url": u, "source": s}
                          for u, (s, r) in sorted(self.web_urls.items(), key=lambda kv: (kv[1][1], kv[0]))],

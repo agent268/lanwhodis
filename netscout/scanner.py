@@ -9,6 +9,7 @@ from . import classify, recog
 from .discovery import mdns, net, probe, smb, ssdp, sweep, wsd
 from .discovery import snmp as snmp_mod
 from .discovery.base import Iface, ScanContext
+from .labels import LabelStore
 from .model import Device, DeviceTable
 
 
@@ -17,6 +18,7 @@ def scan(
     *,
     timeout: float = 4.0,
     port_scan: bool = True,
+    labels: "LabelStore | bool | None" = True,
     snmp: bool = True,
     snmp_communities: tuple[str, ...] = ("public",),
     stop: threading.Event | None = None,
@@ -75,9 +77,13 @@ def scan(
         if not d.mac and d.ip in arp:
             table.get(d.ip, arp[d.ip])
 
+    store = LabelStore() if labels is True else labels or None
     for d in devices:
         recog.annotate(d)
         classify.classify(d)
+    if store:
+        store.apply(devices)        # your corrections win over the scanner's verdict
+    for d in devices:
         table.touch(d)
     return devices
 

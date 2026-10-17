@@ -9,14 +9,14 @@ from PySide6.QtCore import QObject, QSize, QSortFilterProxyModel, Qt, QThread, Q
 from PySide6.QtGui import (QColor, QDesktopServices, QIcon, QPainter, QPixmap, QStandardItem,
                            QStandardItemModel)
 from PySide6.QtSvg import QSvgRenderer
-from PySide6.QtWidgets import (QApplication, QComboBox, QFileDialog, QHBoxLayout, QLabel, QLineEdit,
-                               QMainWindow, QMessageBox, QProgressBar, QPushButton, QSplitter,
-                               QTableView, QTextBrowser, QVBoxLayout, QWidget, QHeaderView)
-
-from PySide6.QtWidgets import QMenu
+from PySide6.QtWidgets import (QApplication, QComboBox, QDialog, QDialogButtonBox, QFileDialog, QFormLayout,
+                               QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMenu, QMessageBox,
+                               QPlainTextEdit, QProgressBar, QPushButton, QSplitter, QTableView,
+                               QTextBrowser, QVBoxLayout, QWidget, QHeaderView)
 
 from .. import classify, devtypes, export, icons, scanner
 from ..discovery import net
+from ..labels import LabelStore, key_for
 from ..model import Device
 
 COLS = ["Device", "IP", "Type", "OS", "Vendor", "MAC", "Confidence"]
@@ -50,25 +50,77 @@ class ScanWorker(QObject):
     progress = Signal(str, float)
     finished = Signal(list, str)    # devices, error ('' on success)
 
-    def __init__(self, ifaces):
+    def __init__(self, ifaces, labels: LabelStore):
         super().__init__()
         self.ifaces = ifaces
+        self.labels = labels
         self.stop = threading.Event()
 
     def run(self) -> None:
         def on_update(d: Device) -> None:
             try:   # discovery threads mutate devices concurrently; skip a torn snapshot
                 classify.classify(d)
+                self.labels.apply([d])          # your corrections show up live too
                 self.updated.emit(d.to_dict())
             except RuntimeError:
                 pass
 
         try:
-            devices = scanner.scan(self.ifaces, stop=self.stop, on_update=on_update,
+            devices = scanner.scan(self.ifaces, stop=self.stop, on_update=on_update, labels=self.labels,
                                    log=self.log.emit, progress=self.progress.emit)
             self.finished.emit(devices, "")
         except Exception as e:
             self.finished.emit([], f"{type(e).__name__}: {e}")
+
+
+class EditDialog(QDialog):
+    """Correct what netscout thinks a device is: your name, type and notes are remembered by MAC."""
+
+    def __init__(self, parent, snap: dict):
+        super().__init__(parent)
+        self.setWindowTitle(f"Edit {snap['name']}")
+        user = snap.get("user") or {}
+        auto_type = user.get("auto_type") or snap["type"]
+        auto_label = devtypes.label(auto_type)
+        self.reset_requested = False
+
+        self.name = QLineEdit(user.get("name") or "")
+        self.name.setPlaceholderText("auto: " + (snap["name"] if not user.get("name") else snap["ip"]))
+        self.type = QComboBox()
+        self.type.addItem(type_icon(auto_type), f"Auto-detected: {auto_label}", None)
+        for key, (label, category, _) in sorted(devtypes.TYPES.items(), key=lambda kv: (kv[1][1], kv[1][0])):
+            self.type.addItem(type_icon(key), f"{category} › {label}", key)
+        if user.get("type"):
+            self.type.setCurrentIndex(self.type.findData(user["type"]))
+        self.type.setIconSize(QSize(22, 22))
+        self.notes = QPlainTextEdit(user.get("notes") or "")
+        self.notes.setPlaceholderText("Anything worth remembering (location, owner, what it controls)…")
+        self.notes.setFixedHeight(90)
+
+        form = QFormLayout()
+        form.addRow("Name", self.name)
+        form.addRow("Type", self.type)
+        form.addRow("Notes", self.notes)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
+        reset = buttons.addButton("Reset to auto-detected", QDialogButtonBox.ButtonRole.DestructiveRole)
+        reset.setEnabled(bool(user))
+        reset.clicked.connect(self._reset)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        lay = QVBoxLayout(self)
+        lay.addWidget(QLabel(f"{snap['ip']}  ·  {snap['mac'] or 'no MAC'}  ·  detected as {auto_label} "
+                             f"({int((user.get('auto_confidence') or snap['confidence']) * 100)}%)"))
+        lay.addLayout(form)
+        lay.addWidget(buttons)
+        self.setMinimumWidth(460)
+
+    def _reset(self) -> None:
+        self.reset_requested = True
+        self.accept()
+
+    def fields(self) -> dict:
+        return {"name": self.name.text().strip() or None, "type": self.type.currentData(),
+                "notes": self.notes.toPlainText().strip() or None}
 
 
 class MainWindow(QMainWindow):
@@ -76,6 +128,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("netscout")
         self.resize(1180, 720)
+        self.labels = LabelStore()
         self.devices: list[Device] = []
         self.rows: dict[str, int] = {}
         self.snapshots: dict[str, dict] = {}
@@ -202,7 +255,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Scanning…")
 
         self.thread = QThread()
-        self.worker = ScanWorker(ifaces)
+        self.worker = ScanWorker(ifaces, self.labels)
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
         self.worker.updated.connect(self.on_device)
@@ -224,8 +277,10 @@ class MainWindow(QMainWindow):
             row = self.rows[ip] = self.model.rowCount()
             self.model.appendRow([QStandardItem() for _ in COLS])
         ip_key = tuple(int(p) for p in ip.split("."))
-        values = [snap["name"], ip, snap["type_label"], snap["os"], snap["vendor"] or "", snap["mac"] or "",
-                  f"{int(snap['confidence'] * 100)}%"]
+        user = snap.get("user")
+        edited = bool(user and user["type"])
+        values = [snap["name"], ip, snap["type_label"] + (" ✎" if edited else ""), snap["os"],
+                  snap["vendor"] or "", snap["mac"] or "", f"{int(snap['confidence'] * 100)}%"]
         keys = [snap["name"].lower(), ip_key[0] << 24 | ip_key[1] << 16 | ip_key[2] << 8 | ip_key[3],
                 snap["type_label"], snap["os"].lower(), (snap["vendor"] or "").lower(), snap["mac"] or "",
                 snap["confidence"]]
@@ -234,6 +289,9 @@ class MainWindow(QMainWindow):
             it.setText(v)
             it.setData(k, Qt.ItemDataRole.UserRole)
         self.model.item(row, 0).setIcon(type_icon(snap["type"]))
+        self.model.item(row, 2).setToolTip(
+            f"You set this. Auto-detected: {user['auto_type_label']} ({int(user['auto_confidence'] * 100)}%)"
+            if edited else "")
         n = self.model.rowCount()
         self.setWindowTitle(f"netscout — {n} devices")
 
@@ -269,7 +327,11 @@ class MainWindow(QMainWindow):
         self.head_name.setText(snap["name"])
         self.head_sub.setText(f"{snap['type_label']} · {int(snap['confidence'] * 100)}% confidence")
         e = html.escape
-        rows = [("IP", snap["ip"]), ("OS", snap["os"] and f'{snap["os"]} ({int(snap["os_confidence"] * 100)}%)'), ("MAC", snap["mac"]), ("Vendor", snap["vendor"]), ("Model", snap["model"]),
+        user = snap.get("user") or {}
+        rows = [("Auto-detected", user.get("type") and
+                 f"{user['auto_type_label']} ({int(user['auto_confidence'] * 100)}%) - you changed this"),
+                ("Your notes", user.get("notes")),
+                ("IP", snap["ip"]), ("OS", snap["os"] and f'{snap["os"]} ({int(snap["os_confidence"] * 100)}%)'), ("MAC", snap["mac"]), ("Vendor", snap["vendor"]), ("Model", snap["model"]),
                 ("Hostname", snap["hostname"]), ("Open ports", ", ".join(map(str, snap["open_ports"])))]
         # per-service facts (mdns:_x._tcp = port N) are shown properly in "Advertised services" below
         rows += [(k, v) for k, v in snap["facts"].items() if not k.startswith("mdns:")]
@@ -331,11 +393,32 @@ class MainWindow(QMainWindow):
         act = menu.addAction("Open web UI")
         act.setEnabled(bool(snap["web_url"]))
         act.triggered.connect(lambda *_: self.open_web_ui())
+        menu.addAction("Edit name / type / notes…").triggered.connect(lambda *_: self.edit_device())
         menu.addSeparator()
         menu.addAction("Copy IP").triggered.connect(lambda *_: QApplication.clipboard().setText(snap["ip"]))
         if snap["mac"]:
             menu.addAction("Copy MAC").triggered.connect(lambda *_: QApplication.clipboard().setText(snap["mac"]))
         menu.exec(self.table.viewport().mapToGlobal(pos))
+
+    def edit_device(self) -> None:
+        snap = self.selected_snap()
+        if not snap:
+            return
+        device = next((d for d in self.devices if d.ip == snap["ip"]), None)
+        if device is None:            # live rows exist before the scan finishes; corrections need the final device
+            self.statusBar().showMessage("Wait for the scan to finish, then edit")
+            return
+        dlg = EditDialog(self, snap)
+        if dlg.exec() != QDialog.DialogCode.Accepted:
+            return
+        if dlg.reset_requested:
+            self.labels.forget(key_for(device))
+        else:
+            self.labels.label_device(device, **dlg.fields())
+        self.labels.apply([device])
+        self.on_device(device.to_dict())
+        self.show_selected()
+        self.statusBar().showMessage("Saved" if not dlg.reset_requested else "Back to auto-detected")
 
     # --- export ---------------------------------------------------------------------------
     def export_results(self) -> None:

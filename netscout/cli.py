@@ -6,7 +6,7 @@ import signal
 import sys
 import threading
 
-from . import __version__, export, paths, rules, scanner
+from . import __version__, devtypes, export, labels, oui, paths, rules, scanner
 from .discovery import net
 
 
@@ -27,6 +27,17 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--list-interfaces", action="store_true", help="show scannable interfaces and exit")
     p.add_argument("--check-rules", action="store_true",
                    help="validate your custom rules (see README, 'Custom rules') and exit")
+    lab = p.add_argument_group("corrections (remembered across scans, keyed by MAC)")
+    lab.add_argument("--label", metavar="MAC|IP", help="correct a device; combine with --set-type/-name/-notes")
+    lab.add_argument("--set-type", metavar="TYPE", help="device type, e.g. camera, thermostat (see --list-types)")
+    lab.add_argument("--set-name", metavar="NAME", help='your name for it ("" clears it)')
+    lab.add_argument("--set-notes", metavar="TEXT", help='free-form notes ("" clears them)')
+    lab.add_argument("--forget", metavar="MAC|IP", help="remove a correction")
+    lab.add_argument("--list-labels", action="store_true", help="show your corrections next to what was auto-detected")
+    lab.add_argument("--list-types", action="store_true", help="show valid device types")
+    lab.add_argument("--suggest-rules", action="store_true",
+                     help="print custom vendor rules derived from your corrections (review, then save as vendor.toml)")
+    lab.add_argument("--no-labels", action="store_true", help="ignore your corrections for this scan")
     p.add_argument("--services", action="store_true",
                    help="include each device's advertised services in txt/md output (always in json/xlsx/html)")
     p.add_argument("--no-snmp", action="store_true", help="don't query SNMP (read-only GETs; default community 'public')")
@@ -40,10 +51,60 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
+def _label_command(args) -> int | None:
+    """Handle the corrections options. Returns an exit code, or None when none were used."""
+    wants = [args.label, args.forget, args.list_labels, args.list_types, args.suggest_rules]
+    if not any(wants):
+        return None
+    if args.list_types:
+        for key, (name, category, _) in sorted(devtypes.TYPES.items(), key=lambda kv: (kv[1][1], kv[0])):
+            print(f"{key:18} {name}  [{category}]")
+        return 0
+    store = labels.LabelStore()
+    if args.suggest_rules:
+        sys.stdout.write(labels.suggest_rules(store))
+        return 0
+    if args.list_labels:
+        entries = store.all()
+        if not entries:
+            print(f"no corrections yet ({store.path})")
+        for key, e in sorted(entries.items()):
+            auto = e.get("auto") or {}
+            auto_t = auto.get("type")
+            note = ""
+            if e.get("type") and auto_t:
+                same = "=" if e["type"] == auto_t else "!="
+                note = f"  [auto: {devtypes.label(auto_t)} {int((auto.get('confidence') or 0) * 100)}% {same}]"
+            print(f"{key:20} {e.get('name', '-'):24} {e.get('type', '-'):16}{note}"
+                  + (f"  # {e['notes']}" if e.get("notes") else ""))
+        return 0
+    try:
+        if args.forget:
+            key = labels.normalize_key(args.forget, net.read_arp())
+            print(f"forgot {key}" if store.forget(key) else f"no correction stored for {key}")
+            return 0
+        key = labels.normalize_key(args.label, net.read_arp())
+        if args.set_type is None and args.set_name is None and args.set_notes is None:
+            print("netscout: --label needs at least one of --set-type, --set-name, --set-notes", file=sys.stderr)
+            return 2
+        fields = {n: v for n, v in (("type", args.set_type), ("name", args.set_name), ("notes", args.set_notes))
+                  if v is not None}
+        # No scan here, so the only evidence snapshot we can record is the OUI vendor.
+        store.set(key, auto={"vendor": oui.lookup(key)} if oui.normalize_mac(key) else None, **fields)
+        print(f"saved {key}: " + ", ".join(f"{k}={v!r}" for k, v in fields.items()))
+        return 0
+    except ValueError as e:
+        print(f"netscout: {e}", file=sys.stderr)
+        return 2
+
+
 def main(argv: list[str] | None = None) -> int:
     for s in (sys.stdout, sys.stderr):
         s.reconfigure(encoding="utf-8", errors="replace")
     args = _parser().parse_args(argv)
+    rc = _label_command(args)
+    if rc is not None:
+        return rc
     if args.check_rules:
         rs = rules.reload()
         print(f"rules dir: {paths.rules_dir()}")
@@ -88,7 +149,8 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         devices = scanner.scan(ifaces, timeout=args.timeout, port_scan=not args.no_ports, snmp=not args.no_snmp,
-                                 snmp_communities=tuple(args.snmp_community or ("public",)), stop=stop, log=log)
+                                 snmp_communities=tuple(args.snmp_community or ("public",)),
+                                 labels=not args.no_labels, stop=stop, log=log)
     except RuntimeError as e:
         print(f"netscout: {e}", file=sys.stderr)
         return 1

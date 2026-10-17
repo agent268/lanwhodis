@@ -86,3 +86,18 @@ Both are read-only and unauthenticated, on by default, and skipped with `--no-sn
 - **SMB** (`discovery/smb.py`): SMB2 NEGOTIATE plus an anonymous NTLM NEGOTIATE; the server's NTLM challenge reports
   the real Windows version/build, computer and domain name, signing policy and boot time. No login is attempted
   and nothing is read from the host. Samba/NAS answer without a version, which is only a weak hint.
+
+## Corrections (device memory)
+
+Wrong guess? Fix it once and it sticks. GUI: right-click a device -> **Edit name / type / notes...** (reset any time).
+CLI:
+
+    netscout --label aa:bb:cc:dd:ee:01 --set-type camera --set-name "Porch Cam" --set-notes "front door"
+    netscout --list-labels            # your corrections next to what was auto-detected (!= marks disagreements)
+    netscout --forget aa:bb:cc:dd:ee:01
+    netscout --suggest-rules > vendor.toml    # turn corrections into custom vendor rules (review first)
+
+Corrections live in `labels.json` in the data dir, keyed by MAC (phones with randomized MACs keep one MAC per
+network). They override the type/name with 100% confidence, the scanner's own verdict is kept beside them, and each
+correction records what the scanner saw - so a disagreement is also a bug report you can act on (`--suggest-rules`
+or a custom rule). `--no-labels` ignores them for one scan.
